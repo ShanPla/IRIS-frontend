@@ -6,6 +6,16 @@ const DEFAULT_PI_BACKEND_PORT = "8000";
 const envApiUrl = import.meta.env.VITE_API_URL as string | undefined;
 export const DEFAULT_PI_HINT = extractPiAddress(envApiUrl?.trim() ?? "");
 
+function isLikelyPiHost(hostname: string): boolean {
+  if (!hostname) return false;
+  if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+  // Private-network IPv4 ranges are typical for local Pi deployments.
+  if (/^10\./.test(hostname)) return true;
+  if (/^192\.168\./.test(hostname)) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return true;
+  return false;
+}
+
 export function normalizeBackendUrl(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "";
@@ -13,8 +23,10 @@ export function normalizeBackendUrl(raw: string): string {
   try {
     const parsed = new URL(withProtocol);
     if (!parsed.hostname) return "";
-    const port = parsed.port || DEFAULT_PI_BACKEND_PORT;
-    return `${parsed.protocol}//${parsed.hostname}:${port}`;
+    const hasExplicitPort = Boolean(parsed.port);
+    const shouldDefaultToPiPort = !hasExplicitPort && parsed.protocol === "http:" && isLikelyPiHost(parsed.hostname);
+    const port = hasExplicitPort ? parsed.port : shouldDefaultToPiPort ? DEFAULT_PI_BACKEND_PORT : "";
+    return `${parsed.protocol}//${parsed.hostname}${port ? `:${port}` : ""}`;
   } catch {
     return "";
   }
@@ -24,6 +36,10 @@ export function getStoredBackendUrl(): string | null {
   const fromStorage = localStorage.getItem(BACKEND_URL_KEY);
   if (fromStorage) {
     const normalized = normalizeBackendUrl(fromStorage);
+    return normalized || null;
+  }
+  if (envApiUrl) {
+    const normalized = normalizeBackendUrl(envApiUrl);
     return normalized || null;
   }
   return null;
@@ -143,8 +159,11 @@ function extractPiAddress(value: string): string {
   try {
     const parsed = new URL(withProtocol);
     if (!parsed.hostname) return "";
-    const port = parsed.port || DEFAULT_PI_BACKEND_PORT;
-    return `${parsed.hostname}:${port}`;
+    if (parsed.port) return `${parsed.hostname}:${parsed.port}`;
+    if (parsed.protocol === "http:" && isLikelyPiHost(parsed.hostname)) {
+      return `${parsed.hostname}:${DEFAULT_PI_BACKEND_PORT}`;
+    }
+    return parsed.hostname;
   } catch {
     return trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
   }

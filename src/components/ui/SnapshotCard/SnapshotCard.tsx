@@ -20,3 +20,4 @@ export default function SnapshotCard({ url, alt = "snapshot", size = "md" }: Sna
     </div>
   );
 }
+
