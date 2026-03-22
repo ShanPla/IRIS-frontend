@@ -86,7 +86,7 @@ export default function Settings() {
     if (!probe.ok) { setError(probe.message); setSavingConnection(false); return; }
     setStoredBackendUrl(probe.normalizedUrl);
     setError("");
-    logout();
+    logout({ clearBackend: false });
     setSavingConnection(false);
     navigate("/login", { replace: true });
   };

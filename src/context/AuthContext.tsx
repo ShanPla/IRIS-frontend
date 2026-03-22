@@ -3,6 +3,7 @@ import {
   apiClient,
   getStoredBackendUrl,
   getStoredToken,
+  setStoredBackendUrl,
   setStoredToken,
 } from "../lib/api";
 import type { AuthSession, AuthUser, UserRole } from "../types/iris";
@@ -11,7 +12,7 @@ interface AuthContextType {
   session: AuthSession | null;
   bootstrapping: boolean;
   login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: (options?: { clearBackend?: boolean }) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -85,8 +86,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = (options?: { clearBackend?: boolean }) => {
+    const shouldClearBackend = options?.clearBackend ?? true;
     setStoredToken(null);
+    if (shouldClearBackend) {
+      setStoredBackendUrl(null);
+    }
     setSession(null);
   };
 
