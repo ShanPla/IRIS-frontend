@@ -5,6 +5,7 @@ import { Wifi, WifiOff } from "lucide-react";
 import "./Topbar.css";
 
 const pageTitles: Record<string, string> = {
+  "/setup": "Set Raspberry Pi IP",
   "/dashboard": "Dashboard",
   "/logs": "Event Logs",
   "/profiles": "Face Profiles",

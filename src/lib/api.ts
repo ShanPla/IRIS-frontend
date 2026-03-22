@@ -3,6 +3,7 @@ import axios from "axios";
 const STORAGE_KEY = "iris_access_token";
 const BACKEND_URL_KEY = "iris_backend_url";
 const DEFAULT_PI_BACKEND_PORT = "8000";
+const ENV_API_URL = normalizeBackendUrl((import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "");
 
 function isLikelyPiHost(hostname: string): boolean {
   if (!hostname) return false;
@@ -31,6 +32,14 @@ export function normalizeBackendUrl(raw: string): string {
 }
 
 export function getStoredBackendUrl(): string | null {
+  const storedPiUrl = getStoredPiBackendUrl();
+  if (storedPiUrl) {
+    return storedPiUrl;
+  }
+  return ENV_API_URL || null;
+}
+
+export function getStoredPiBackendUrl(): string | null {
   const fromStorage = localStorage.getItem(BACKEND_URL_KEY);
   if (fromStorage) {
     const normalized = normalizeBackendUrl(fromStorage);
@@ -40,7 +49,7 @@ export function getStoredBackendUrl(): string | null {
 }
 
 export function getStoredPiAddress(): string | null {
-  const backendUrl = getStoredBackendUrl();
+  const backendUrl = getStoredPiBackendUrl();
   if (!backendUrl) return null;
   return extractPiAddress(backendUrl);
 }
@@ -49,16 +58,28 @@ export function hasBackendUrlConfigured(): boolean {
   return Boolean(getStoredBackendUrl());
 }
 
+export function hasPiBackendConfigured(): boolean {
+  return Boolean(getStoredPiBackendUrl());
+}
+
 export function setStoredBackendUrl(url: string | null) {
   if (!url) {
     localStorage.removeItem(BACKEND_URL_KEY);
-    delete apiClient.defaults.baseURL;
+    if (ENV_API_URL) {
+      apiClient.defaults.baseURL = ENV_API_URL;
+    } else {
+      delete apiClient.defaults.baseURL;
+    }
     return;
   }
   const normalized = normalizeBackendUrl(url);
   if (!normalized) {
     localStorage.removeItem(BACKEND_URL_KEY);
-    delete apiClient.defaults.baseURL;
+    if (ENV_API_URL) {
+      apiClient.defaults.baseURL = ENV_API_URL;
+    } else {
+      delete apiClient.defaults.baseURL;
+    }
     return;
   }
   localStorage.setItem(BACKEND_URL_KEY, normalized);

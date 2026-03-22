@@ -4,10 +4,10 @@ import {
   LogOut, ShieldCheck, Activity, Server, UserCog,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { getStoredPiAddress } from "../../../lib/api";
+import { getStoredPiAddress, hasPiBackendConfigured } from "../../../lib/api";
 import "./Sidebar.css";
 
-const links = [
+const fullLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/logs", label: "Event Logs", icon: ScrollText },
   { to: "/profiles", label: "Face Profiles", icon: Users },
@@ -17,10 +17,16 @@ const links = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
+const setupLinks = [
+  { to: "/setup", label: "Set Raspberry Pi IP", icon: Server },
+];
+
 export default function Sidebar() {
   const { session, logout } = useAuth();
   const navigate = useNavigate();
   const piAddress = getStoredPiAddress();
+  const piConfigured = hasPiBackendConfigured();
+  const links = piConfigured ? fullLinks : setupLinks;
 
   const handleLogout = () => {
     logout();
@@ -36,6 +42,11 @@ export default function Sidebar() {
           <Server size={11} />
           {piAddress}
         </div>
+      )}
+      {!piConfigured && (
+        <p className="sidebar-warning">
+          Limited mode: set Raspberry Pi IP to unlock all modules.
+        </p>
       )}
 
       <nav className="sidebar-nav">

@@ -1,6 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { hasBackendUrlConfigured } from "../../lib/api";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, bootstrapping } = useAuth();
@@ -15,10 +14,6 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!session) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  if (!hasBackendUrlConfigured()) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

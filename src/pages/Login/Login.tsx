@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { hasBackendUrlConfigured } from "../../lib/api";
+import { hasBackendUrlConfigured, hasPiBackendConfigured } from "../../lib/api";
 import "./Login.css";
 
 export default function Login() {
@@ -21,9 +21,9 @@ export default function Login() {
     setSubmitting(false);
 
     if (success) {
-      navigate("/dashboard");
+      navigate(hasPiBackendConfigured() ? "/dashboard" : "/setup");
     } else {
-      setError("Login failed. Check username/password and backend URL.");
+      setError("Login failed. Check username/password and backend API.");
     }
   };
 
@@ -34,14 +34,7 @@ export default function Login() {
         <p className="login-subtitle">Integrated Recognition for Intrusion System</p>
         <p className="login-admin-label">Admin Access</p>
 
-        {!backendConfigured && (
-          <div className="login-setup-note">
-            <p>Set Raspberry Pi IP first before signing in.</p>
-            <button type="button" className="login-setup-btn" onClick={() => navigate("/setup")}>
-              Go To Setup
-            </button>
-          </div>
-        )}
+        {!backendConfigured && <p className="login-error">Backend API is not configured.</p>}
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="login-field">

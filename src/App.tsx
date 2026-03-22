@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PiConfiguredRoute from "./components/auth/PiConfiguredRoute";
 import Sidebar from "./components/layout/Sidebar/Sidebar";
 import Topbar from "./components/layout/Topbar/Topbar";
 import Login from "./pages/Login/Login";
@@ -12,6 +13,7 @@ import AdminAccounts from "./pages/AdminAccounts/AdminAccounts";
 import UserManagement from "./pages/UserManagement/UserManagement";
 import SystemHealth from "./pages/SystemHealth/SystemHealth";
 import Setup from "./pages/Setup/Setup";
+import { hasPiBackendConfigured } from "./lib/api";
 
 function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,50 +27,86 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function PostLoginLanding() {
+  const { session, bootstrapping } = useAuth();
+
+  if (bootstrapping) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading session...</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={hasPiBackendConfigured() ? "/dashboard" : "/setup"} replace />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/setup" element={<Setup />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<PostLoginLanding />} />
+          <Route path="/setup" element={
+            <ProtectedRoute>
+              <AdminLayout><Setup /></AdminLayout>
+            </ProtectedRoute>
+          } />
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <AdminLayout><Dashboard /></AdminLayout>
+              <PiConfiguredRoute>
+                <AdminLayout><Dashboard /></AdminLayout>
+              </PiConfiguredRoute>
             </ProtectedRoute>
           } />
           <Route path="/logs" element={
             <ProtectedRoute>
-              <AdminLayout><Logs /></AdminLayout>
+              <PiConfiguredRoute>
+                <AdminLayout><Logs /></AdminLayout>
+              </PiConfiguredRoute>
             </ProtectedRoute>
           } />
           <Route path="/profiles" element={
             <ProtectedRoute>
-              <AdminLayout><Profiles /></AdminLayout>
+              <PiConfiguredRoute>
+                <AdminLayout><Profiles /></AdminLayout>
+              </PiConfiguredRoute>
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
             <ProtectedRoute>
-              <AdminLayout><Settings /></AdminLayout>
+              <PiConfiguredRoute>
+                <AdminLayout><Settings /></AdminLayout>
+              </PiConfiguredRoute>
             </ProtectedRoute>
           } />
           <Route path="/admin-accounts" element={
             <ProtectedRoute>
-              <AdminLayout><AdminAccounts /></AdminLayout>
+              <PiConfiguredRoute>
+                <AdminLayout><AdminAccounts /></AdminLayout>
+              </PiConfiguredRoute>
             </ProtectedRoute>
           } />
           <Route path="/users" element={
             <ProtectedRoute>
-              <AdminLayout><UserManagement /></AdminLayout>
+              <PiConfiguredRoute>
+                <AdminLayout><UserManagement /></AdminLayout>
+              </PiConfiguredRoute>
             </ProtectedRoute>
           } />
           <Route path="/system-health" element={
             <ProtectedRoute>
-              <AdminLayout><SystemHealth /></AdminLayout>
+              <PiConfiguredRoute>
+                <AdminLayout><SystemHealth /></AdminLayout>
+              </PiConfiguredRoute>
             </ProtectedRoute>
           } />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<PostLoginLanding />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
