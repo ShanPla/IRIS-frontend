@@ -13,6 +13,7 @@ import AdminAccounts from "./pages/AdminAccounts/AdminAccounts";
 import UserManagement from "./pages/UserManagement/UserManagement";
 import SystemHealth from "./pages/SystemHealth/SystemHealth";
 import Setup from "./pages/Setup/Setup";
+import LiveFeed from "./pages/LiveFeed/LiveFeed";
 import { hasPiBackendConfigured } from "./lib/api";
 
 function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -103,6 +104,13 @@ export default function App() {
             <ProtectedRoute>
               <PiConfiguredRoute>
                 <AdminLayout><SystemHealth /></AdminLayout>
+              </PiConfiguredRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/live-feed" element={
+            <ProtectedRoute>
+              <PiConfiguredRoute>
+                <AdminLayout><LiveFeed /></AdminLayout>
               </PiConfiguredRoute>
             </ProtectedRoute>
           } />

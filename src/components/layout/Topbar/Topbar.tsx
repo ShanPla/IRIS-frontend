@@ -11,6 +11,7 @@ const pageTitles: Record<string, string> = {
   "/profiles": "Face Profiles",
   "/users": "User Management",
   "/admin-accounts": "Admin Accounts",
+  "/live-feed": "Live Feed",
   "/system-health": "System Health",
   "/settings": "Settings",
 };

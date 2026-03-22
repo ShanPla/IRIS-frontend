@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ScrollText, Users, Settings,
-  LogOut, ShieldCheck, Activity, Server, UserCog,
+  LogOut, ShieldCheck, Activity, Server, UserCog, Video,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { getStoredPiAddress, hasPiBackendConfigured } from "../../../lib/api";
@@ -13,6 +13,7 @@ const fullLinks = [
   { to: "/profiles", label: "Face Profiles", icon: Users },
   { to: "/users", label: "User Management", icon: UserCog },
   { to: "/admin-accounts", label: "Admin Accounts", icon: ShieldCheck },
+  { to: "/live-feed", label: "Live Feed", icon: Video },
   { to: "/system-health", label: "System Health", icon: Activity },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
