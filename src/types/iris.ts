@@ -16,3 +16,15 @@ export interface FaceProfile {
   addedAt: string;
   imageUrl?: string;
 }
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  password: string;
+  name: string;
+  role: "superadmin" | "admin";
+}
+
+export interface AuthSession {
+  user: Omit<AdminUser, "password">;
+}

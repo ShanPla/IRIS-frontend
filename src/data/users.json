@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1",
+    "username": "rey",
+    "password": "iris2026",
+    "name": "Reymark De Castro",
+    "role": "superadmin"
+  },
+  {
+    "id": "2",
+    "username": "steephen",
+    "password": "iris2026",
+    "name": "Steephen Resurreccion",
+    "role": "admin"
+  },
+  {
+    "id": "3",
+    "username": "shan",
+    "password": "iris2026",
+    "name": "Shan Christian Platon",
+    "role": "admin"
+  }
+]
