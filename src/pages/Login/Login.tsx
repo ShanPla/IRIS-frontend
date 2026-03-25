@@ -17,13 +17,13 @@ export default function Login() {
     e.preventDefault();
     setSubmitting(true);
     setError("");
-    const success = await login(username, password);
+    const result = await login(username, password);
     setSubmitting(false);
 
-    if (success) {
+    if (result.success) {
       navigate(hasPiBackendConfigured() ? "/dashboard" : "/setup");
     } else {
-      setError("Login failed. Check username/password and backend API.");
+      setError(result.error ?? "Login failed. Check username/password and backend API.");
     }
   };
 

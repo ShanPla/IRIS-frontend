@@ -1,18 +1,26 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import {
+  AUTH_API_TIMEOUT_MS,
   apiClient,
   getStoredBackendUrl,
+  getApiErrorMessage,
   getStoredToken,
+  logApiError,
   setStoredBackendUrl,
   setStoredPiAddress,
   setStoredToken,
 } from "../lib/api";
 import type { AuthSession, AuthUser, UserRole } from "../types/iris";
 
+interface LoginResult {
+  success: boolean;
+  error?: string;
+}
+
 interface AuthContextType {
   session: AuthSession | null;
   bootstrapping: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<LoginResult>;
   logout: (options?: { clearBackend?: boolean; clearPi?: boolean }) => void;
 }
 
@@ -53,10 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void restoreSession();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<LoginResult> => {
     const backendUrl = getStoredBackendUrl();
     if (!backendUrl) {
-      return false;
+      return { success: false, error: "Backend API is not configured." };
     }
 
     const form = new URLSearchParams();
@@ -71,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
+          timeout: AUTH_API_TIMEOUT_MS,
         }
       );
 
@@ -79,11 +88,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const user = await fetchCurrentUser();
       setSession({ user, token });
-      return true;
-    } catch {
+      return { success: true };
+    } catch (error) {
+      logApiError("Login request failed", error);
       setStoredToken(null);
       setSession(null);
-      return false;
+      return {
+        success: false,
+        error: getApiErrorMessage(error, "Login failed. Check username/password and backend API."),
+      };
     }
   };
 

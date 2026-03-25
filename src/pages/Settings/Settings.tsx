@@ -109,7 +109,7 @@ export default function Settings() {
         </div>
         <p className="mode-description">
           {mode === "home"
-            ? "Home mode: alarm triggers only for unrecognized individuals."
+            ? "Home mode: alarm triggers only for unknown individuals."
             : "Away mode: stricter sensitivity. Any unverified presence triggers an immediate alert."}
         </p>
       </section>

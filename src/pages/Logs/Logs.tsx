@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { apiClient, buildApiUrl } from "../../lib/api";
+import { apiClient, buildApiUrl, getApiErrorMessage, logApiError } from "../../lib/api";
 import AlertCard from "../../components/ui/AlertCard/AlertCard";
 import type { BadgeStatus } from "../../components/ui/StatusBadge/StatusBadge";
 import "./Logs.css";
@@ -55,8 +55,9 @@ export default function Logs() {
       setEvents(response.data.items);
       setTotal(response.data.total);
       setOffset(newOffset);
-    } catch {
-      setError("Failed to load events from backend.");
+    } catch (error) {
+      logApiError("Loading event log failed", error);
+      setError(getApiErrorMessage(error, "Failed to load events from backend."));
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 export type SecurityMode = "home" | "away";
 
-export type EventStatus = "authorized" | "unrecognized" | "unverifiable";
+export type EventStatus = "authorized" | "unknown" | "unverifiable";
 export type UserRole = "admin" | "homeowner_primary" | "homeowner_invited";
 
 export interface SecurityEvent {

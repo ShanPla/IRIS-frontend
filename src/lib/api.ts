@@ -5,6 +5,8 @@ const BACKEND_URL_KEY = "iris_backend_api_url";
 const PI_ADDRESS_KEY = "iris_pi_address";
 const LEGACY_MIXED_URL_KEY = "iris_backend_url";
 const DEFAULT_PI_BACKEND_PORT = "8000";
+export const DEFAULT_API_TIMEOUT_MS = 15000;
+export const AUTH_API_TIMEOUT_MS = 45000;
 const ENV_API_URL = normalizeBackendUrl(
   (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? ""
 );
@@ -138,8 +140,46 @@ export function setStoredPiAddress(address: string | null) {
 
 export const apiClient = axios.create({
   baseURL: getStoredBackendUrl() ?? undefined,
-  timeout: 15000,
+  timeout: DEFAULT_API_TIMEOUT_MS,
 });
+
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data;
+    if (typeof detail === "string" && detail.trim()) {
+      return detail;
+    }
+    if (
+      detail &&
+      typeof detail === "object" &&
+      "detail" in detail &&
+      typeof detail.detail === "string" &&
+      detail.detail.trim()
+    ) {
+      return detail.detail;
+    }
+    if (error.code === "ECONNABORTED") {
+      return "Backend request timed out. Check if the API server is online.";
+    }
+    if (error.code === "ERR_NETWORK") {
+      return "Cannot reach the backend API. Check the backend URL and server status.";
+    }
+    if (error.message?.trim()) {
+      return error.message;
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+export function logApiError(scope: string, error: unknown) {
+  // Keep the full error in the browser console for debugging without exposing it in the UI.
+  console.error(scope, error);
+}
 
 export function getStoredToken(): string | null {
   return localStorage.getItem(STORAGE_KEY);
