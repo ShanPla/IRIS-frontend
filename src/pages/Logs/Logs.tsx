@@ -14,6 +14,18 @@ interface BackendEvent {
   matched_name: string | null;
 }
 
+interface ExpandedEvent {
+  id: number;
+  event_type: string | null;
+  matched_name: string | null;
+  snapshot_path: string | null;
+  alarm_triggered: boolean | null;
+  notification_sent: boolean | null;
+  mode: string | null;
+  notes: string | null;
+  timestamp: string | null;
+}
+
 interface EventsResponse {
   items: BackendEvent[];
   total: number;
@@ -36,6 +48,8 @@ export default function Logs() {
   const [filter, setFilter] = useState<BackendEvent["event_type"] | "all">("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [eventDetail, setEventDetail] = useState<Record<number, ExpandedEvent>>({});
 
   useEffect(() => {
     void loadEvents(0);
@@ -59,6 +73,25 @@ export default function Logs() {
       setError("Failed to load events from backend.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEventDetail = async (id: number) => {
+    if (eventDetail[id]) return;
+    try {
+      const response = await apiClient.get<ExpandedEvent>(`/api/events/${id}`);
+      setEventDetail((prev) => ({ ...prev, [id]: response.data }));
+    } catch {
+      // silently ignore — detail panel will just stay empty
+    }
+  };
+
+  const handleRowClick = (id: number) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+      void loadEventDetail(id);
     }
   };
 
@@ -104,17 +137,69 @@ export default function Logs() {
         <p className="logs-empty">No events found.</p>
       ) : (
         <div className="logs-list">
-          {events.map((event) => (
-            <AlertCard
-              key={event.id}
-              id={event.id}
-              status={statusMap[event.event_type]}
-              matchedName={event.matched_name}
-              timestamp={event.timestamp}
-              snapshotUrl={buildApiUrl(event.snapshot_path)}
-              alarmTriggered={event.alarm_triggered}
-            />
-          ))}
+          {events.map((event) => {
+            const isExpanded = expandedId === event.id;
+            const detail = eventDetail[event.id];
+
+            return (
+              <div key={event.id}>
+                <div
+                  className={`logs-row ${isExpanded ? "logs-row--expanded" : ""}`}
+                  onClick={() => handleRowClick(event.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleRowClick(event.id); }}
+                >
+                  <AlertCard
+                    id={event.id}
+                    status={statusMap[event.event_type]}
+                    matchedName={event.matched_name}
+                    timestamp={event.timestamp}
+                    snapshotUrl={buildApiUrl(event.snapshot_path)}
+                    alarmTriggered={event.alarm_triggered}
+                  />
+                </div>
+
+                {isExpanded && (
+                  <div className="event-detail-expanded">
+                    {!detail ? (
+                      <p className="event-detail-loading">Loading details...</p>
+                    ) : (
+                      <>
+                        <div className="event-detail-grid">
+                          <div className="event-detail-field">
+                            <span className="event-detail-label">Mode</span>
+                            <span className="event-detail-value">{detail.mode ?? "—"}</span>
+                          </div>
+                          <div className="event-detail-field">
+                            <span className="event-detail-label">Alarm Triggered</span>
+                            <span className="event-detail-value">{detail.alarm_triggered ? "Yes" : "No"}</span>
+                          </div>
+                          <div className="event-detail-field">
+                            <span className="event-detail-label">Notification Sent</span>
+                            <span className="event-detail-value">{detail.notification_sent ? "Yes" : "No"}</span>
+                          </div>
+                          {detail.notes && (
+                            <div className="event-detail-field">
+                              <span className="event-detail-label">Notes</span>
+                              <span className="event-detail-value">{detail.notes}</span>
+                            </div>
+                          )}
+                        </div>
+                        {detail.snapshot_path && (
+                          <img
+                            className="event-detail-snapshot"
+                            src={buildApiUrl(detail.snapshot_path)}
+                            alt="Event snapshot"
+                          />
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -140,4 +225,3 @@ export default function Logs() {
     </div>
   );
 }
-

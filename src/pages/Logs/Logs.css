@@ -141,3 +141,67 @@
   color: #6b7280;
 }
 
+.logs-row {
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: outline 0.15s;
+  outline: 2px solid transparent;
+}
+
+.logs-row:focus-visible {
+  outline: 2px solid #22d3ee;
+}
+
+.logs-row--expanded {
+  outline: 2px solid #1f2937;
+}
+
+.event-detail-expanded {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.event-detail-loading {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.event-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.event-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.event-detail-label {
+  font-size: 0.7rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.event-detail-value {
+  font-size: 0.85rem;
+  color: #e5e7eb;
+  font-weight: 500;
+}
+
+.event-detail-snapshot {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  background: #030712;
+}
+
