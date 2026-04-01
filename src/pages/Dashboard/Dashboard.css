@@ -72,3 +72,64 @@
   justify-content: center;
   color: #4b5563;
 }
+
+.stat-card--clickable {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.stat-card--clickable:hover {
+  background: #243041;
+}
+.stat-hint {
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+.dashboard-latest {
+  margin-bottom: 1.5rem;
+}
+.latest-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #1f2937;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+.latest-snapshot {
+  width: 64px;
+  height: 64px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.latest-snapshot-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 0.5rem;
+  background: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.latest-info { flex: 1; }
+.latest-name { font-size: 1rem; font-weight: 700; }
+.latest-meta { font-size: 0.75rem; color: #6b7280; margin-top: 2px; }
+.dashboard-summary { margin-bottom: 1.5rem; }
+.summary-counts {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  background: #1f2937;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+.summary-item { display: flex; align-items: center; gap: 0.5rem; }
+.summary-dot { width: 10px; height: 10px; border-radius: 50%; }
+.summary-item--green .summary-dot { background: #4ade80; }
+.summary-item--red .summary-dot { background: #f87171; }
+.summary-item--yellow .summary-dot { background: #f59e0b; }
+.summary-count { font-weight: 700; color: #e5e7eb; font-size: 0.9rem; }
+.summary-label { color: #6b7280; font-size: 0.8rem; }

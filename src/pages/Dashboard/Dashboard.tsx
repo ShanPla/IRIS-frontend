@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Shield, Camera, ShieldAlert, ShieldCheck, BellOff, RefreshCw } from "lucide-react";
+import { Shield, Camera, ShieldAlert, ShieldCheck, BellOff, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 import { apiClient, buildApiUrl, getStoredBackendUrl, getStoredToken } from "../../lib/api";
 import "./Dashboard.css";
 
@@ -9,20 +9,24 @@ interface BackendEvent { id: number; event_type: "authorized" | "unknown" | "unv
 export default function Dashboard() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [events, setEvents] = useState<BackendEvent[]>([]);
+  const [allEvents, setAllEvents] = useState<BackendEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [togglingMode, setTogglingMode] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
-      const [statusRes, eventsRes] = await Promise.all([
+      const [statusRes, eventsRes, allEventsRes] = await Promise.all([
         apiClient.get<SystemStatus>("/api/system/status"),
         apiClient.get<{ items: BackendEvent[] }>("/api/events/", { params: { limit: 5 } }),
+        apiClient.get<{ items: BackendEvent[] }>("/api/events/", { params: { limit: 100 } }),
       ]);
       setStatus(statusRes.data);
       setEvents(eventsRes.data.items);
+      setAllEvents(allEventsRes.data.items);
     } catch {
       setError("Failed to load dashboard data.");
     } finally {
@@ -32,6 +36,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     void load();
+
+    // Auto-refresh every 10 seconds
+    const refreshInterval = setInterval(() => { void load(); }, 10000);
 
     // WebSocket live feed
     const base = getStoredBackendUrl();
@@ -52,6 +59,7 @@ export default function Dashboard() {
               matched_name: msg.matched_name ?? null,
             };
             setEvents((prev) => [newEvent, ...prev].slice(0, 5));
+            setAllEvents((prev) => [newEvent, ...prev]);
           }
           if (msg.type === "mode_change") setStatus((s) => s ? { ...s, mode: msg.mode as "home" | "away" } : s);
           if (msg.type === "alarm_change") setStatus((s) => s ? { ...s, alarm_active: msg.alarm_active ?? false } : s);
@@ -62,13 +70,40 @@ export default function Dashboard() {
       wsRef.current = ws;
     }
 
-    return () => { wsRef.current?.close(); };
+    return () => {
+      clearInterval(refreshInterval);
+      wsRef.current?.close();
+    };
   }, []);
 
   const silenceAlarm = async () => {
     await apiClient.put("/api/system/alarm", { active: false });
     setStatus((s) => s ? { ...s, alarm_active: false } : s);
   };
+
+  const toggleMode = async () => {
+    if (!status || togglingMode) return;
+    const newMode = status.mode === "home" ? "away" : "home";
+    setTogglingMode(true);
+    try {
+      await apiClient.put("/api/system/mode", { mode: newMode });
+      setStatus((s) => s ? { ...s, mode: newMode } : s);
+    } catch {
+      setError("Failed to toggle mode.");
+    } finally {
+      setTogglingMode(false);
+    }
+  };
+
+  // Compute 24h summary counts
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const events24h = allEvents.filter((e) => new Date(e.timestamp).getTime() >= cutoff);
+  const countAuthorized = events24h.filter((e) => e.event_type === "authorized").length;
+  const countUnknown = events24h.filter((e) => e.event_type === "unknown").length;
+  const countUnverifiable = events24h.filter((e) => e.event_type === "unverifiable").length;
+
+  // Latest event for recognition card
+  const latestEvent = events[0] ?? null;
 
   const colorMap: Record<string, string> = {
     authorized: "text-green-400",
@@ -100,7 +135,22 @@ export default function Dashboard() {
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
       <div className="dashboard-stats">
-        <StatCard icon={<Shield className={status?.mode === "away" ? "icon-yellow" : "icon-cyan"} />} label="Mode" value={status?.mode?.toUpperCase() ?? "—"} />
+        <div
+          className="stat-card stat-card--clickable"
+          onClick={() => void toggleMode()}
+          title={`Click to switch to ${status?.mode === "home" ? "away" : "home"} mode`}
+        >
+          <div className="stat-icon">
+            {status?.mode === "away"
+              ? <ToggleRight className="icon-yellow" />
+              : <ToggleLeft className="icon-cyan" />}
+          </div>
+          <div>
+            <p className="stat-label">Mode</p>
+            <p className="stat-value">{status?.mode?.toUpperCase() ?? "—"}</p>
+            <p className="stat-hint">Click to toggle</p>
+          </div>
+        </div>
         <StatCard icon={<Camera className="icon-cyan" />} label="Camera" value="Active" />
         <StatCard
           icon={status?.alarm_active ? <ShieldAlert className="text-red-400" /> : <ShieldCheck className="text-green-400" />}
@@ -108,6 +158,62 @@ export default function Dashboard() {
           value={status?.alarm_active ? "TRIGGERED" : "Safe"}
         />
         <StatCard icon={<ShieldAlert className="icon-yellow" />} label="Last Alert" value={events[0] ? labelMap[events[0].event_type] : "None"} />
+      </div>
+
+      {/* Events (24h) summary */}
+      <div className="dashboard-summary">
+        <p className="feed-label">Events (24h)</p>
+        <div className="summary-counts">
+          <div className="summary-item summary-item--green">
+            <span className="summary-dot" />
+            <span className="summary-count">{countAuthorized}</span>
+            <span className="summary-label">Authorized</span>
+          </div>
+          <div className="summary-item summary-item--red">
+            <span className="summary-dot" />
+            <span className="summary-count">{countUnknown}</span>
+            <span className="summary-label">Unknown</span>
+          </div>
+          <div className="summary-item summary-item--yellow">
+            <span className="summary-dot" />
+            <span className="summary-count">{countUnverifiable}</span>
+            <span className="summary-label">Unverifiable</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Latest Recognition card */}
+      <div className="dashboard-latest">
+        <p className="feed-label">Latest Recognition</p>
+        {latestEvent ? (
+          <div className="latest-card">
+            {buildApiUrl(latestEvent.snapshot_path) ? (
+              <img src={buildApiUrl(latestEvent.snapshot_path)} alt="snapshot" className="latest-snapshot" />
+            ) : (
+              <div className="latest-snapshot-placeholder"><Camera size={24} className="text-gray-500" /></div>
+            )}
+            <div className="latest-info">
+              <p className={`latest-name ${colorMap[latestEvent.event_type]}`}>
+                {latestEvent.matched_name ?? labelMap[latestEvent.event_type]}
+              </p>
+              <p className="latest-meta">
+                {labelMap[latestEvent.event_type]}
+                {latestEvent.matched_name ? ` · ${latestEvent.matched_name}` : ""}
+              </p>
+              <p className="latest-meta">{new Date(latestEvent.timestamp).toLocaleString()}</p>
+            </div>
+            {latestEvent.alarm_triggered && (
+              <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full flex-shrink-0">Alarm</span>
+            )}
+          </div>
+        ) : (
+          <div className="latest-card">
+            <div className="latest-snapshot-placeholder"><Camera size={24} className="text-gray-500" /></div>
+            <div className="latest-info">
+              <p className="latest-name text-gray-500">No events yet</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="dashboard-feed">
