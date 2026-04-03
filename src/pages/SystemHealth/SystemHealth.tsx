@@ -12,6 +12,8 @@ interface CameraHealth {
   camera_ready: boolean;
   latest_frame_ts?: number | null;
   known_faces?: number;
+  detection_method?: string;
+  yolo_loaded?: boolean;
 }
 
 export default function SystemHealth() {
@@ -101,6 +103,12 @@ export default function SystemHealth() {
           label="Camera"
           value={cameraHealth ? (cameraHealth.camera_ready ? "Ready" : "Not Ready") : "N/A (Windows)"}
           type={cameraHealth?.camera_ready ? "good" : "neutral"}
+        />
+        <StatusCard
+          icon={<Camera size={18} />}
+          label="Detection"
+          value={cameraHealth?.detection_method === "yolov8n" ? "YOLOv8n" : "Background Sub."}
+          type={cameraHealth?.yolo_loaded ? "good" : "neutral"}
         />
         <StatusCard
           icon={<Wifi size={18} />}

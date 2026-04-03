@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Shield, Camera, ShieldAlert, ShieldCheck, BellOff, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
+import { Camera, ShieldAlert, ShieldCheck, BellOff, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 import { apiClient, buildApiUrl, getStoredBackendUrl, getStoredToken } from "../../lib/api";
 import "./Dashboard.css";
 

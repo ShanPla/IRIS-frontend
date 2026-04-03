@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Camera,
@@ -20,62 +20,154 @@ interface CameraHealthResponse {
   engine_running: boolean;
   camera_opened: boolean;
   camera_ready: boolean;
+  detection_method?: string;
   latest_frame_ts?: number | null;
   mode: "home" | "away";
   alarm_active: boolean;
 }
 
+function normalizeBaseUrl(value: string): string {
+  if (/^https?:\/\//i.test(value)) return value.replace(/\/+$/, "");
+  const isLocal = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/i.test(value);
+  const protocol = isLocal ? "http" : "https";
+  return `${protocol}://${value}`.replace(/\/+$/, "");
+}
+
+function getDynamicCameraBase(storedPiAddress?: string | null): string | undefined {
+  if (storedPiAddress?.trim()) {
+    return normalizeBaseUrl(storedPiAddress.trim());
+  }
+
+  const host = window.location.hostname;
+  const protocol = window.location.protocol;
+
+  if (!host) return undefined;
+
+  if (host === "localhost" || host === "127.0.0.1") {
+    return undefined;
+  }
+
+  if (host.endsWith(".local")) {
+    return `${protocol}//${host}:8000`;
+  }
+
+  return `http://${host}:8000`;
+}
+
 export default function LiveFeed() {
-  const [fps, setFps] = useState(10);
+  const [fps, setFps] = useState(5);
   const [quality, setQuality] = useState(80);
-  const [streamRefreshKey, setStreamRefreshKey] = useState(0);
-  const [stillRefreshKey, setStillRefreshKey] = useState(0);
+  const [grayscale, setGrayscale] = useState(true);
   const [health, setHealth] = useState<CameraHealthResponse | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const [healthError, setHealthError] = useState("");
   const [streamError, setStreamError] = useState("");
   const [lastHealthCheck, setLastHealthCheck] = useState<string>("Never");
+  const [streaming, setStreaming] = useState(true);
+
+  // Fetch-based frame polling state
+  const [streamBlobUrl, setStreamBlobUrl] = useState<string | null>(null);
+  const [frameBlobUrl, setFrameBlobUrl] = useState<string | null>(null);
+  const streamingRef = useRef(true);
+  const prevStreamBlob = useRef<string | null>(null);
+  const prevFrameBlob = useRef<string | null>(null);
 
   const backendBase = getStoredBackendUrl();
   const piAddress = getStoredPiAddress();
   const token = getStoredToken();
 
   const cameraBase = useMemo(() => {
-    if (!piAddress) return undefined;
-    return /^https?:\/\//i.test(piAddress) ? piAddress : `http://${piAddress}`;
+    return getDynamicCameraBase(piAddress);
   }, [piAddress]);
 
-  const streamUrl = useMemo(() => {
-    if (!cameraBase) return undefined;
-
-    const params = new URLSearchParams({
-      fps: String(fps),
-      quality: String(quality),
-      v: String(streamRefreshKey),
-    });
-
-    if (token) {
-      params.set("token", token);
+  // Fetch a single frame as blob URL
+  const fetchFrame = useCallback(async (url: string): Promise<string | null> => {
+    try {
+      const res = await fetch(url, {
+        headers: { "ngrok-skip-browser-warning": "true" },
+      });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      if (!blob.type.startsWith("image/")) return null;
+      return URL.createObjectURL(blob);
+    } catch {
+      return null;
     }
+  }, []);
 
-    return `${cameraBase}/api/camera/live?${params.toString()}`;
-  }, [cameraBase, fps, quality, streamRefreshKey, token]);
-
-  const frameUrl = useMemo(() => {
-    if (!cameraBase) return undefined;
-
+  // Build frame URL
+  const buildFrameUrl = useCallback(() => {
+    if (!cameraBase) return null;
     const params = new URLSearchParams({
       quality: String(quality),
-      v: String(stillRefreshKey),
+      grayscale: String(grayscale),
     });
-
-    if (token) {
-      params.set("token", token);
-    }
-
+    if (token) params.set("token", token);
     return `${cameraBase}/api/camera/frame?${params.toString()}`;
-  }, [cameraBase, quality, stillRefreshKey, token]);
+  }, [cameraBase, quality, grayscale, token]);
 
+  // Polling loop for live stream (fetch frame repeatedly)
+  useEffect(() => {
+    streamingRef.current = streaming;
+    if (!streaming || !cameraBase) return;
+
+    let cancelled = false;
+    const delay = Math.max(50, 1000 / fps);
+
+    const poll = async () => {
+      while (!cancelled && streamingRef.current) {
+        const url = buildFrameUrl();
+        if (!url) break;
+
+        const blobUrl = await fetchFrame(`${url}&v=${Date.now()}`);
+        if (cancelled) {
+          if (blobUrl) URL.revokeObjectURL(blobUrl);
+          break;
+        }
+
+        if (blobUrl) {
+          setStreamBlobUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return blobUrl;
+          });
+          setStreamError("");
+        } else {
+          setStreamError("Failed to fetch frame. Check camera connection.");
+        }
+
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    };
+
+    void poll();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [streaming, cameraBase, fps, quality, grayscale, token, buildFrameUrl, fetchFrame]);
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (prevStreamBlob.current) URL.revokeObjectURL(prevStreamBlob.current);
+      if (prevFrameBlob.current) URL.revokeObjectURL(prevFrameBlob.current);
+    };
+  }, []);
+
+  // Single frame capture
+  const captureFrame = async () => {
+    const url = buildFrameUrl();
+    if (!url) return;
+    const blobUrl = await fetchFrame(`${url}&v=${Date.now()}`);
+    if (blobUrl) {
+      setFrameBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return blobUrl;
+      });
+    }
+  };
+
+  // Health check
   useEffect(() => {
     void loadHealth();
     const timer = window.setInterval(() => {
@@ -88,27 +180,18 @@ export default function LiveFeed() {
     if (!options?.silent) {
       setHealthLoading(true);
     }
-
     setHealthError("");
-
     try {
       if (!cameraBase) {
         throw new Error("Pi camera URL is not configured.");
       }
-
       const url = new URL(`${cameraBase}/health/camera`);
-      if (token) {
-        url.searchParams.set("token", token);
-      }
-
+      if (token) url.searchParams.set("token", token);
       const res = await fetch(url.toString(), {
         method: "GET",
+        headers: { "ngrok-skip-browser-warning": "true" },
       });
-
-      if (!res.ok) {
-        throw new Error(`Health request failed with status ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`Health request failed with status ${res.status}`);
       const data = (await res.json()) as CameraHealthResponse;
       setHealth(data);
       setLastHealthCheck(new Date().toLocaleTimeString());
@@ -116,20 +199,16 @@ export default function LiveFeed() {
       setHealth(null);
       setHealthError("Unable to reach camera health endpoint.");
     } finally {
-      if (!options?.silent) {
-        setHealthLoading(false);
-      }
+      if (!options?.silent) setHealthLoading(false);
     }
   }
 
-  const reconnectStream = () => {
-    setStreamError("");
-    setStreamRefreshKey((prev) => prev + 1);
+  const toggleStreaming = () => {
+    setStreaming((prev) => !prev);
+    if (!streaming) setStreamError("");
   };
 
-  const refreshStillFrame = () => {
-    setStillRefreshKey((prev) => prev + 1);
-  };
+  const streamDisplayUrl = buildFrameUrl();
 
   return (
     <div className="livefeed-page">
@@ -151,15 +230,15 @@ export default function LiveFeed() {
             {healthLoading ? "Checking..." : "Refresh Health"}
           </button>
 
-          <button className="livefeed-btn livefeed-btn--primary" onClick={reconnectStream}>
+          <button className="livefeed-btn livefeed-btn--primary" onClick={toggleStreaming}>
             <RotateCcw size={14} />
-            Reconnect Stream
+            {streaming ? "Stop Stream" : "Start Stream"}
           </button>
 
-          {streamUrl && (
-            <a className="livefeed-btn livefeed-btn--ghost" href={streamUrl} target="_blank" rel="noreferrer">
+          {streamDisplayUrl && (
+            <a className="livefeed-btn livefeed-btn--ghost" href={streamDisplayUrl} target="_blank" rel="noreferrer">
               <ExternalLink size={14} />
-              Open Stream URL
+              Open Frame URL
             </a>
           )}
         </div>
@@ -169,7 +248,7 @@ export default function LiveFeed() {
         <article className="livefeed-panel livefeed-panel--viewer">
           <div className="livefeed-panel-head">
             <p className="livefeed-panel-title">
-              <Video size={16} /> Live Stream
+              <Video size={16} /> Live Stream {streaming ? "(Polling)" : "(Stopped)"}
             </p>
             <span className={`livefeed-pill ${health?.camera_ready ? "livefeed-pill--good" : "livefeed-pill--warn"}`}>
               {health?.camera_ready ? "Camera Ready" : "Camera Not Ready"}
@@ -177,19 +256,16 @@ export default function LiveFeed() {
           </div>
 
           <div className="livefeed-stream-wrap">
-            {streamUrl ? (
+            {streamBlobUrl ? (
               <img
-                key={streamUrl}
-                src={streamUrl}
+                src={streamBlobUrl}
                 alt="Live camera stream"
                 className="livefeed-stream"
-                onLoad={() => setStreamError("")}
-                onError={() => setStreamError("Live stream failed to load. Click Reconnect Stream.")}
               />
             ) : (
               <div className="livefeed-stream-placeholder">
                 <Camera size={44} />
-                <p>Pi camera URL is unavailable.</p>
+                <p>{streaming ? "Connecting to camera..." : "Stream stopped"}</p>
               </div>
             )}
           </div>
@@ -214,7 +290,7 @@ export default function LiveFeed() {
                 id="fps"
                 type="range"
                 min={1}
-                max={30}
+                max={15}
                 value={fps}
                 onChange={(e) => setFps(Number(e.target.value))}
               />
@@ -232,8 +308,18 @@ export default function LiveFeed() {
               />
             </div>
 
+            <div className="livefeed-control">
+              <label htmlFor="grayscale-toggle">Grayscale: {grayscale ? "On" : "Off"}</label>
+              <input
+                id="grayscale-toggle"
+                type="checkbox"
+                checked={grayscale}
+                onChange={(e) => setGrayscale(e.target.checked)}
+              />
+            </div>
+
             <p className="livefeed-hint">
-              Start at <strong>10 FPS</strong> and <strong>80 quality</strong> for stable Pi testing.
+              For Pi testing, start around <strong>5 FPS</strong> and <strong>80 quality</strong>.
             </p>
           </article>
 
@@ -242,26 +328,23 @@ export default function LiveFeed() {
               <p className="livefeed-panel-title">
                 <Image size={16} /> Single Frame Check
               </p>
-              <button className="livefeed-btn livefeed-btn--ghost livefeed-btn--small" onClick={refreshStillFrame}>
+              <button className="livefeed-btn livefeed-btn--ghost livefeed-btn--small" onClick={() => void captureFrame()}>
                 <RefreshCw size={12} />
                 Capture
               </button>
             </div>
 
             <div className="livefeed-frame-wrap">
-              {frameUrl ? (
+              {frameBlobUrl ? (
                 <img
-                  src={frameUrl}
+                  src={frameBlobUrl}
                   alt="Single camera frame"
                   className="livefeed-frame"
-                  onError={() => {
-                    // Silent on purpose: frame endpoint may fail if camera is not ready.
-                  }}
                 />
               ) : (
                 <div className="livefeed-stream-placeholder livefeed-stream-placeholder--small">
                   <Camera size={24} />
-                  <p>No frame URL</p>
+                  <p>Click Capture to fetch a frame</p>
                 </div>
               )}
             </div>
@@ -280,12 +363,14 @@ export default function LiveFeed() {
             ) : (
               <div className="livefeed-diagnostics">
                 <DiagnosticItem label="Cloud Backend URL" value={backendBase ?? "Not configured"} />
-                <DiagnosticItem label="Pi Camera URL" value={cameraBase ?? "Not configured"} />
+                <DiagnosticItem label="Stored Pi Address" value={piAddress ?? "Not configured"} />
+                <DiagnosticItem label="Resolved Pi Camera URL" value={cameraBase ?? "Not configured"} />
                 <DiagnosticItem label="Last Health Check" value={lastHealthCheck} />
                 <DiagnosticItem label="OpenCV Available" value={booleanLabel(health?.cv2_available)} />
                 <DiagnosticItem label="Engine Running" value={booleanLabel(health?.engine_running)} />
                 <DiagnosticItem label="Camera Opened" value={booleanLabel(health?.camera_opened)} />
                 <DiagnosticItem label="Camera Ready" value={booleanLabel(health?.camera_ready)} />
+                <DiagnosticItem label="Detection Method" value={health?.detection_method === "yolov8n" ? "YOLOv8n" : health?.detection_method ?? "Unknown"} />
                 <DiagnosticItem label="System Mode" value={health?.mode ?? "Unknown"} />
                 <DiagnosticItem label="Alarm State" value={health?.alarm_active ? "Active" : "Idle"} />
                 <DiagnosticItem
