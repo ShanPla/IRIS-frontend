@@ -208,11 +208,29 @@ export function setAuthHeader(token: string | null) {
 export function buildApiUrl(path: string | null | undefined): string | undefined {
   if (!path) return undefined;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  const base = getStoredBackendUrl();
-  if (!base) return path;
+
+  // Normalize DB snapshot paths (e.g. "data/snapshots/file.jpg") to API paths
+  let apiPath = path;
+  if (apiPath.startsWith("data/snapshots/")) {
+    const filename = apiPath.split("/").pop();
+    apiPath = `/api/snapshots/${filename}`;
+  } else if (!apiPath.startsWith("/")) {
+    apiPath = `/${apiPath}`;
+  }
+
+  // Snapshots are served from the Pi — prefer Pi address over cloud backend
+  const piAddress = getStoredPiAddress();
+  let base: string | undefined;
+  if (piAddress?.trim()) {
+    const raw = piAddress.trim();
+    base = /^https?:\/\//i.test(raw) ? raw.replace(/\/+$/, "") : `http://${raw}`;
+  }
+  if (!base) base = getStoredBackendUrl() ?? undefined;
+  if (!base) return apiPath;
+
   const token = getStoredToken();
-  const sep = path.includes("?") ? "&" : "?";
-  return `${base}${path}${token ? `${sep}token=${token}` : ""}`;
+  const sep = apiPath.includes("?") ? "&" : "?";
+  return `${base}${apiPath}${token ? `${sep}token=${token}` : ""}`;
 }
 
 export interface BackendProbeResult {

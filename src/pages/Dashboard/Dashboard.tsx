@@ -112,7 +112,7 @@ export default function Dashboard() {
   };
   const labelMap: Record<string, string> = {
     authorized: "Authorized",
-    unknown: "Unknown Person",
+    unknown: "Intruder Detected",
     unverifiable: "Unverifiable",
   };
 
@@ -224,22 +224,37 @@ export default function Dashboard() {
           <div className="feed-placeholder"><Camera size={48} /><p className="text-gray-500 text-sm mt-2">No events yet</p></div>
         ) : (
           <div className="flex flex-col gap-3 mt-3">
-            {events.map((event) => (
-              <div key={event.id} className="flex items-center gap-4 bg-gray-900 rounded-xl p-3 border border-gray-800">
-                {buildApiUrl(event.snapshot_path) ? (
-                  <img src={buildApiUrl(event.snapshot_path)} alt="snapshot" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0"><Camera size={20} className="text-gray-600" /></div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-sm ${colorMap[event.event_type]}`}>
-                    {labelMap[event.event_type]}{event.matched_name ? ` — ${event.matched_name}` : ""}
-                  </p>
-                  <p className="text-gray-500 text-xs">{new Date(event.timestamp).toLocaleString()}</p>
+            {events.map((event) => {
+              const isIntruder = event.event_type === "unknown";
+              return (
+                <div
+                  key={event.id}
+                  className={`flex items-center gap-4 rounded-xl p-3 border ${
+                    isIntruder
+                      ? "bg-red-950 border-red-700 ring-1 ring-red-600/40"
+                      : "bg-gray-900 border-gray-800"
+                  }`}
+                >
+                  {buildApiUrl(event.snapshot_path) ? (
+                    <img src={buildApiUrl(event.snapshot_path)} alt="snapshot" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0"><Camera size={20} className="text-gray-600" /></div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold text-sm ${colorMap[event.event_type]}`}>
+                      {labelMap[event.event_type]}{event.matched_name ? ` — ${event.matched_name}` : ""}
+                    </p>
+                    <p className="text-gray-500 text-xs">{new Date(event.timestamp).toLocaleString()}</p>
+                  </div>
+                  {isIntruder && (
+                    <span className="text-xs bg-red-700 text-white px-2 py-1 rounded-full flex-shrink-0 font-bold animate-pulse">INTRUDER</span>
+                  )}
+                  {!isIntruder && event.alarm_triggered && (
+                    <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full flex-shrink-0">Alarm</span>
+                  )}
                 </div>
-                {event.alarm_triggered && <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full flex-shrink-0">Alarm</span>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

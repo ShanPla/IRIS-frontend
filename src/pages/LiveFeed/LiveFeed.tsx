@@ -3,10 +3,8 @@ import {
   AlertTriangle,
   Camera,
   ExternalLink,
-  Image,
   RefreshCw,
   RotateCcw,
-  SlidersHorizontal,
   Video,
 } from "lucide-react";
 import { getStoredBackendUrl, getStoredPiAddress, getStoredToken } from "../../lib/api";
@@ -55,9 +53,6 @@ function getDynamicCameraBase(storedPiAddress?: string | null): string | undefin
 }
 
 export default function LiveFeed() {
-  const [fps, setFps] = useState(5);
-  const [quality, setQuality] = useState(80);
-  const [grayscale, setGrayscale] = useState(true);
   const [health, setHealth] = useState<CameraHealthResponse | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const [healthError, setHealthError] = useState("");
@@ -67,10 +62,10 @@ export default function LiveFeed() {
 
   // Fetch-based frame polling state
   const [streamBlobUrl, setStreamBlobUrl] = useState<string | null>(null);
-  const [frameBlobUrl, setFrameBlobUrl] = useState<string | null>(null);
+  const [reconnecting, setReconnecting] = useState(false);
   const streamingRef = useRef(true);
   const prevStreamBlob = useRef<string | null>(null);
-  const prevFrameBlob = useRef<string | null>(null);
+  const consecutiveFailsRef = useRef(0);
 
   const backendBase = getStoredBackendUrl();
   const piAddress = getStoredPiAddress();
@@ -98,13 +93,10 @@ export default function LiveFeed() {
   // Build frame URL
   const buildFrameUrl = useCallback(() => {
     if (!cameraBase) return null;
-    const params = new URLSearchParams({
-      quality: String(quality),
-      grayscale: String(grayscale),
-    });
+    const params = new URLSearchParams({ quality: "80", grayscale: "true" });
     if (token) params.set("token", token);
     return `${cameraBase}/api/camera/frame?${params.toString()}`;
-  }, [cameraBase, quality, grayscale, token]);
+  }, [cameraBase, token]);
 
   // Polling loop for live stream (fetch frame repeatedly)
   useEffect(() => {
@@ -112,7 +104,7 @@ export default function LiveFeed() {
     if (!streaming || !cameraBase) return;
 
     let cancelled = false;
-    const delay = Math.max(50, 1000 / fps);
+    const delay = 200; // ~5 FPS
 
     const poll = async () => {
       while (!cancelled && streamingRef.current) {
@@ -126,16 +118,28 @@ export default function LiveFeed() {
         }
 
         if (blobUrl) {
+          consecutiveFailsRef.current = 0;
+          setReconnecting(false);
           setStreamBlobUrl((prev) => {
             if (prev) URL.revokeObjectURL(prev);
             return blobUrl;
           });
           setStreamError("");
         } else {
-          setStreamError("Failed to fetch frame. Check camera connection.");
+          consecutiveFailsRef.current += 1;
+          if (consecutiveFailsRef.current >= 5) {
+            setReconnecting(true);
+            setStreamError("");
+          } else {
+            setStreamError("Failed to fetch frame. Check camera connection.");
+          }
         }
 
-        await new Promise((r) => setTimeout(r, delay));
+        // Back off when failing to avoid hammering a struggling Pi
+        const backoff = consecutiveFailsRef.current >= 5
+          ? Math.min(2000, delay * 3)
+          : delay;
+        await new Promise((r) => setTimeout(r, backoff));
       }
     };
 
@@ -144,28 +148,14 @@ export default function LiveFeed() {
     return () => {
       cancelled = true;
     };
-  }, [streaming, cameraBase, fps, quality, grayscale, token, buildFrameUrl, fetchFrame]);
+  }, [streaming, cameraBase, token, buildFrameUrl, fetchFrame]);
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       if (prevStreamBlob.current) URL.revokeObjectURL(prevStreamBlob.current);
-      if (prevFrameBlob.current) URL.revokeObjectURL(prevFrameBlob.current);
     };
   }, []);
-
-  // Single frame capture
-  const captureFrame = async () => {
-    const url = buildFrameUrl();
-    if (!url) return;
-    const blobUrl = await fetchFrame(`${url}&v=${Date.now()}`);
-    if (blobUrl) {
-      setFrameBlobUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return blobUrl;
-      });
-    }
-  };
 
   // Health check
   useEffect(() => {
@@ -256,7 +246,12 @@ export default function LiveFeed() {
           </div>
 
           <div className="livefeed-stream-wrap">
-            {streamBlobUrl ? (
+            {reconnecting ? (
+              <div className="livefeed-stream-placeholder">
+                <RefreshCw size={44} className="livefeed-spin" />
+                <p>Camera stream interrupted — reconnecting...</p>
+              </div>
+            ) : streamBlobUrl ? (
               <img
                 src={streamBlobUrl}
                 alt="Live camera stream"
@@ -279,77 +274,6 @@ export default function LiveFeed() {
         </article>
 
         <aside className="livefeed-side">
-          <article className="livefeed-panel">
-            <p className="livefeed-panel-title">
-              <SlidersHorizontal size={16} /> Stream Controls
-            </p>
-
-            <div className="livefeed-control">
-              <label htmlFor="fps">FPS: {fps}</label>
-              <input
-                id="fps"
-                type="range"
-                min={1}
-                max={15}
-                value={fps}
-                onChange={(e) => setFps(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="livefeed-control">
-              <label htmlFor="quality">JPEG Quality: {quality}</label>
-              <input
-                id="quality"
-                type="range"
-                min={30}
-                max={95}
-                value={quality}
-                onChange={(e) => setQuality(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="livefeed-control">
-              <label htmlFor="grayscale-toggle">Grayscale: {grayscale ? "On" : "Off"}</label>
-              <input
-                id="grayscale-toggle"
-                type="checkbox"
-                checked={grayscale}
-                onChange={(e) => setGrayscale(e.target.checked)}
-              />
-            </div>
-
-            <p className="livefeed-hint">
-              For Pi testing, start around <strong>5 FPS</strong> and <strong>80 quality</strong>.
-            </p>
-          </article>
-
-          <article className="livefeed-panel">
-            <div className="livefeed-panel-head">
-              <p className="livefeed-panel-title">
-                <Image size={16} /> Single Frame Check
-              </p>
-              <button className="livefeed-btn livefeed-btn--ghost livefeed-btn--small" onClick={() => void captureFrame()}>
-                <RefreshCw size={12} />
-                Capture
-              </button>
-            </div>
-
-            <div className="livefeed-frame-wrap">
-              {frameBlobUrl ? (
-                <img
-                  src={frameBlobUrl}
-                  alt="Single camera frame"
-                  className="livefeed-frame"
-                />
-              ) : (
-                <div className="livefeed-stream-placeholder livefeed-stream-placeholder--small">
-                  <Camera size={24} />
-                  <p>Click Capture to fetch a frame</p>
-                </div>
-              )}
-            </div>
-          </article>
-
           <article className="livefeed-panel">
             <p className="livefeed-panel-title">
               <Camera size={16} /> Camera Diagnostics
