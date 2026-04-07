@@ -115,8 +115,8 @@ export default function Dashboard() {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   const events24h = allEvents.filter((e) => new Date(e.timestamp).getTime() >= cutoff);
   const countAuthorized = events24h.filter((e) => e.event_type === "authorized").length;
-  const countUnknown = events24h.filter((e) => e.event_type === "unknown").length;
-  const countUnverifiable = events24h.filter((e) => e.event_type === "unverifiable").length;
+  const countPossibleThreat = events24h.filter((e) => e.event_type === "possible_threat").length;
+  const countIntruder = events24h.filter((e) => e.event_type === "unknown").length;
 
   // Latest event for recognition card
   const latestEvent = events[0] ?? null;
@@ -187,15 +187,15 @@ export default function Dashboard() {
             <span className="summary-count">{countAuthorized}</span>
             <span className="summary-label">Authorized</span>
           </div>
-          <div className="summary-item summary-item--red">
-            <span className="summary-dot" />
-            <span className="summary-count">{countUnknown}</span>
-            <span className="summary-label">Unknown</span>
-          </div>
           <div className="summary-item summary-item--yellow">
             <span className="summary-dot" />
-            <span className="summary-count">{countUnverifiable}</span>
-            <span className="summary-label">Unverifiable</span>
+            <span className="summary-count">{countPossibleThreat}</span>
+            <span className="summary-label">Possible Threat</span>
+          </div>
+          <div className="summary-item summary-item--red">
+            <span className="summary-dot" />
+            <span className="summary-count">{countIntruder}</span>
+            <span className="summary-label">Intruder</span>
           </div>
         </div>
       </div>
