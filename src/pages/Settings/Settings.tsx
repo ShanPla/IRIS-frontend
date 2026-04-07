@@ -101,7 +101,7 @@ export default function Settings() {
       <section className="settings-section">
         <div className="settings-section-title"><Shield size={16} />Security Mode</div>
         <p className="settings-section-desc">
-          Away mode applies stricter detection. Home mode is suitable for occupied residences.
+          Away mode triggers the alarm and sends notifications when an intruder is detected. Home mode logs events silently without triggering the alarm.
         </p>
         <div className="mode-toggle">
           <button className={`mode-btn ${mode === "home" ? "mode-btn--active" : ""}`} onClick={() => setMode("home")} disabled={loading}>Home</button>
@@ -109,8 +109,8 @@ export default function Settings() {
         </div>
         <p className="mode-description">
           {mode === "home"
-            ? "Home mode: alarm triggers only for unknown individuals."
-            : "Away mode: stricter sensitivity. Any unverified presence triggers an immediate alert."}
+            ? "Home mode: intruders are logged but the alarm will not sound."
+            : "Away mode: intruders trigger the alarm and push notifications."}
         </p>
       </section>
 
@@ -129,7 +129,7 @@ export default function Settings() {
       {/* Alarm Escalation Delay */}
       <section className="settings-section">
         <div className="settings-section-title"><Bell size={16} />Alarm Escalation Delay</div>
-        <p className="settings-section-desc">How long (in seconds) before triggering the local audible alarm after a soft alert.</p>
+        <p className="settings-section-desc">How long (in seconds) a possible threat is monitored before escalating to an intruder alert.</p>
         <div className="slider-row">
           <span className="slider-label">0s</span>
           <input type="range" min={0} max={60} value={alarmDelay} onChange={(e) => setAlarmDelay(Number(e.target.value))} className="slider" disabled={loading} />

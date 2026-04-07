@@ -40,7 +40,7 @@ const statusMap: Record<BackendEvent["event_type"], BadgeStatus> = {
   authorized: "authorized",
   unknown: "unknown",
   unverifiable: "unverifiable",
-  possible_threat: "unknown",
+  possible_threat: "possible_threat",
 };
 
 export default function Logs() {
@@ -107,15 +107,23 @@ export default function Logs() {
         <h1 className="logs-title">Event Logs</h1>
         <div className="logs-actions">
           <div className="logs-filters">
-            {(["all", "authorized", "unknown", "unverifiable"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`filter-btn ${filter === f ? "filter-btn--active" : ""}`}
-              >
-                {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
+            {(["all", "authorized", "possible_threat", "unknown"] as const).map((f) => {
+              const labelMap: Record<string, string> = {
+                all: "All",
+                authorized: "Authorized",
+                possible_threat: "Possible Threat",
+                unknown: "Intruder",
+              };
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`filter-btn ${filter === f ? "filter-btn--active" : ""}`}
+                >
+                  {labelMap[f]}
+                </button>
+              );
+            })}
           </div>
           <button
             className="logs-refresh-btn"

@@ -156,7 +156,7 @@ export default function Dashboard() {
         <div
           className="stat-card stat-card--clickable"
           onClick={() => void toggleMode()}
-          title={`Click to switch to ${status?.mode === "home" ? "away" : "home"} mode`}
+          title={status?.mode === "home" ? "Home mode: intruders are logged silently. Click to switch to away mode." : "Away mode: intruders trigger alarm & notifications. Click to switch to home mode."}
         >
           <div className="stat-icon">
             {status?.mode === "away"

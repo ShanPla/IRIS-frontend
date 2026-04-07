@@ -18,6 +18,11 @@
   color: #f87171;
 }
 
+.status-badge--possible-threat {
+  background-color: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+}
+
 .status-badge--unverifiable {
   background-color: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
