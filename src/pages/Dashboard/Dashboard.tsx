@@ -59,8 +59,14 @@ export default function Dashboard() {
               timestamp: msg.timestamp ?? new Date().toISOString(),
               matched_name: msg.matched_name ?? null,
             };
-            setEvents((prev) => [newEvent, ...prev].slice(0, 5));
-            setAllEvents((prev) => [newEvent, ...prev]);
+            // Deduplicate by ID: update existing event or prepend new one
+            const upsert = (prev: BackendEvent[]) => {
+              const exists = prev.some((e) => e.id === newEvent.id);
+              if (exists) return prev.map((e) => e.id === newEvent.id ? newEvent : e);
+              return [newEvent, ...prev];
+            };
+            setEvents((prev) => upsert(prev).slice(0, 5));
+            setAllEvents(upsert);
           }
           if (msg.type === "threat_cleared") {
             // A possible_threat was cleared — update it to authorized in local state
