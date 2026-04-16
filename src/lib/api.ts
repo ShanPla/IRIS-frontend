@@ -141,9 +141,6 @@ export function setStoredPiAddress(address: string | null) {
 export const apiClient = axios.create({
   baseURL: getStoredBackendUrl() ?? undefined,
   timeout: DEFAULT_API_TIMEOUT_MS,
-  headers: {
-    "ngrok-skip-browser-warning": "true",
-  },
 });
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {
@@ -252,7 +249,6 @@ export async function probeBackend(url: string): Promise<BackendProbeResult> {
     const response = await fetch(`${normalizedUrl}/health`, {
       method: "GET",
       signal: controller.signal,
-      headers: { "ngrok-skip-browser-warning": "true" },
     });
 
     if (!response.ok) {

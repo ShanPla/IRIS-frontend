@@ -78,9 +78,7 @@ export default function LiveFeed() {
   // Fetch a single frame as blob URL
   const fetchFrame = useCallback(async (url: string): Promise<string | null> => {
     try {
-      const res = await fetch(url, {
-        headers: { "ngrok-skip-browser-warning": "true" },
-      });
+      const res = await fetch(url);
       if (!res.ok) return null;
       const blob = await res.blob();
       if (!blob.type.startsWith("image/")) return null;
@@ -177,10 +175,7 @@ export default function LiveFeed() {
       }
       const url = new URL(`${cameraBase}/health/camera`);
       if (token) url.searchParams.set("token", token);
-      const res = await fetch(url.toString(), {
-        method: "GET",
-        headers: { "ngrok-skip-browser-warning": "true" },
-      });
+      const res = await fetch(url.toString());
       if (!res.ok) throw new Error(`Health request failed with status ${res.status}`);
       const data = (await res.json()) as CameraHealthResponse;
       setHealth(data);
