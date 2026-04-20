@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { 
   ShieldAlert, 
   RefreshCw, 
@@ -87,14 +87,14 @@ export default function Dashboard() {
             <p className="accounts-eyebrow">Fleet Intelligence / Global Mesh</p>
             <h1 className="dashboard-title">Fleet Supervision</h1>
             <div className="dashboard-pulse">
-              <span className={pulse-dot \}></span>
+              <span className="pulse-dot"></span>
               <span>Backend Connectivity: <strong className={stats.backendStatus === "Online" ? "text-primary" : "text-error"}>{stats.backendStatus}</strong> • {stats.onlineDevices} Nodes Synchronized</span>
             </div>
           </div>
 
           <div className="flex gap-4">
             <button className="action-btn primary h-12 px-8 rounded-xl" onClick={() => void loadData()}>
-              <RefreshCw size={16} className={mr-3 \} /> 
+              <RefreshCw size={16} className="mr-3" /> 
               {refreshing ? 'Syncing Mesh...' : 'Sync Registry'}
             </button>
           </div>
@@ -211,15 +211,15 @@ function NodeCinematicCard({ node, index }: { node: PiNodeStatus; index: number 
   const isOnline = node.status === "online";
 
   return (
-    <div className="node-card-cinematic animate-float" style={{ animationDelay: \s }}>
+    <div className="node-card-cinematic animate-float" style={{ animationDelay: `${index * 0.1}s` }}>
       <header className="node-header">
         <div>
           <h4 className="node-name-huge">{node.device_name}</h4>
           <p className="node-id-mono">{node.device_id}</p>
         </div>
         <div className="node-status-badge">
-            <span className={w-1.5 h-1.5 rounded-full \}></span>
-            <span className={	ext-[9px] font-extrabold uppercase tracking-widest \}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+            <span className={`text-[9px] font-extrabold uppercase tracking-widest ${isOnline ? 'text-emerald-500' : 'text-red-500'}`}>
                 {isOnline ? 'Active' : 'Offline'}
             </span>
         </div>
@@ -232,7 +232,7 @@ function NodeCinematicCard({ node, index }: { node: PiNodeStatus; index: number 
         </div>
         <div className="metric-item">
             <span className="metric-label">Thermal</span>
-            <span className="metric-value">{node.cpu_temp ? \°C : '--'}</span>
+            <span className="metric-value">{node.cpu_temp ? `${node.cpu_temp}°C` : '--'}</span>
         </div>
       </div>
 
@@ -264,7 +264,7 @@ function FleetProgressUI({ label, value, color }: any) {
         <span className="text-xs font-serif text-white italic">{value}%</span>
       </div>
       <div className="w-full h-1 bg-black/60 rounded-full overflow-hidden border border-white/5">
-        <div className={\ h-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.1)]} style={{ width: \% }}></div>
+        <div className={`${color} h-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.1)]`} style={{ width: `${value}%` }}></div>
       </div>
     </div>
   );

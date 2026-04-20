@@ -134,7 +134,7 @@ export default function Profiles() {
               topLevelAccounts.map((acc) => (
                 <Fragment key={acc.id}>
                   <tr 
-                    className={ow-primary \}
+                    className="row-primary"
                     onClick={() => toggleExpand(acc.id)}
                   >
                     <td>
