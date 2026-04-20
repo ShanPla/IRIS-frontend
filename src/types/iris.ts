@@ -49,6 +49,7 @@ export interface AppUserSecondary {
     username: string;
     role: string;
     created_at: string;
+    face_profile_count: number;
     permissions: AppUserPermission | null;
     last_active: string | null;
 }

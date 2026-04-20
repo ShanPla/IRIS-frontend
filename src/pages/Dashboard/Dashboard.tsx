@@ -11,6 +11,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { apiClient } from "../../lib/api";
+import { summarizeRegistryAccounts } from "../../lib/accountRegistry";
 import type { FleetStatus, PiNodeStatus, AppUserAccount } from "../../types/iris";
 import "./Dashboard.css";
 
@@ -51,33 +52,24 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
+  const registrySummary = useMemo(() => summarizeRegistryAccounts(accounts), [accounts]);
+
   const stats = useMemo(() => {
     const nodes = fleet?.nodes || [];
     const onlineDevicesCount = nodes.filter(n => n.status === "online").length;
     const offlineDevicesCount = nodes.length - onlineDevicesCount;
     const totalDetectionsCount = nodes.reduce((sum, n) => sum + n.total_events_today, 0);
-    
-    const homeowners = accounts.filter(a => a.role && a.role !== "admin");
-    const totalHomeownersCount = homeowners.length;
-    const totalFacesCount = homeowners.reduce((sum, acc) => sum + (acc.face_profile_count || 0), 0);
-    
-    const now = new Date();
-    const activeHomeownersCount = homeowners.filter(a => {
-        if (!a.last_active) return false;
-        const lastActiveDate = new Date(a.last_active);
-        return (now.getTime() - lastActiveDate.getTime()) < 30 * 60 * 1000;
-    }).length;
 
     return {
         onlineDevices: onlineDevicesCount,
         offlineDevices: offlineDevicesCount,
         totalDetections: totalDetectionsCount,
-        totalFaces: totalFacesCount,
-        activeHomeowners: activeHomeownersCount,
-        totalHomeowners: totalHomeownersCount,
+        totalFaces: registrySummary.totalFaces,
+        activeHomeowners: registrySummary.activeHomeowners,
+        totalHomeowners: registrySummary.totalHomeowners,
         backendStatus: error ? "Offline" : "Online"
     };
-  }, [fleet, accounts, error]);
+  }, [fleet, registrySummary, error]);
 
   return (
     <div className="dashboard-container">
