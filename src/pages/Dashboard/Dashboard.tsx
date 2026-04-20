@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { 
   ShieldAlert, 
   RefreshCw, 
@@ -67,10 +67,10 @@ export default function Dashboard() {
     
     // Online check: last_active within 30 minutes (lenient for testing)
     const now = new Date();
-    const isOnline = (lastActive: string | null) => {
-        if (!lastActive) return false;
-        const lastActive = new Date(lastActive);
-        const diffMinutes = (now.getTime() - lastActive.getTime()) / (1000 * 60);
+    const isOnline = (lastActiveStr: string | null) => {
+        if (!lastActiveStr) return false;
+        const lastActiveDate = new Date(lastActiveStr);
+        const diffMinutes = (now.getTime() - lastActiveDate.getTime()) / (1000 * 60);
         return diffMinutes < 30; // 30 minute window
     };
 
@@ -96,14 +96,14 @@ export default function Dashboard() {
             <p className="accounts-eyebrow">Fleet Intelligence / Global Mesh</p>
             <h1 className="dashboard-title">Fleet Supervision</h1>
             <div className="dashboard-pulse">
-              <span className={`pulse-dot ${stats.backendStatus === "Online" ? "bg-primary" : "bg-error"}`}></span>
+              <span className={pulse-dot }></span>
               <span>Backend Connectivity: <strong className={stats.backendStatus === "Online" ? "text-primary" : "text-error"}>{stats.backendStatus}</strong> • {stats.onlineDevices} Nodes Synchronized</span>
             </div>
           </div>
 
           <div className="flex gap-4">
             <button className="action-btn primary h-12 px-8 rounded-xl" onClick={() => void loadData()}>
-              <RefreshCw size={16} className={`mr-3 ${refreshing ? 'animate-spin' : ''}`} /> 
+              <RefreshCw size={16} className={mr-3 } /> 
               {refreshing ? 'Syncing Mesh...' : 'Sync Registry'}
             </button>
           </div>
@@ -223,15 +223,15 @@ function NodeCinematicCard({ node, index }: { node: PiNodeStatus; index: number 
   const isOnline = node.status === "online";
 
   return (
-    <div className="node-card-cinematic animate-float" style={{ animationDelay: `${index * 0.05}s` }}>
+    <div className="node-card-cinematic animate-float" style={{ animationDelay: ${index * 0.05}s }}>
       <header className="node-header">
         <div>
           <h4 className="node-name-huge">{node.device_name}</h4>
           <p className="node-id-mono">{node.device_id}</p>
         </div>
         <div className="node-status-badge">
-            <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-primary shadow-[0_0_8px_var(--app-primary)]' : 'bg-error'}`}></span>
-            <span className={`text-[9px] font-extrabold uppercase tracking-widest ${isOnline ? 'text-primary' : 'text-error'}`}>
+            <span className={w-1.5 h-1.5 rounded-full }></span>
+            <span className={	ext-[9px] font-extrabold uppercase tracking-widest }>
                 {isOnline ? 'Active' : 'Offline'}
             </span>
         </div>
@@ -244,7 +244,7 @@ function NodeCinematicCard({ node, index }: { node: PiNodeStatus; index: number 
         </div>
         <div className="metric-item">
             <span className="metric-label">Thermal</span>
-            <span className="metric-value">{node.cpu_temp ? `${Math.round(node.cpu_temp)}°C` : '--'}</span>
+            <span className="metric-value">{node.cpu_temp ? ${Math.round(node.cpu_temp)}°C : '--'}</span>
         </div>
       </div>
 
@@ -276,7 +276,7 @@ function FleetProgressUI({ label, value, color }: any) {
         <span className="text-xs font-serif text-white italic">{value}%</span>
       </div>
       <div className="w-full h-1 bg-black/60 rounded-full overflow-hidden border border-white/5">
-        <div className={`${color} h-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.1)]`} style={{ width: `${value}%` }}></div>
+        <div className={${color} h-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.1)]} style={{ width: ${value}% }}></div>
       </div>
     </div>
   );

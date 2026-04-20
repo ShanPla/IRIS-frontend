@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from "react";
+﻿import { useEffect, useState, Fragment } from "react";
 import { 
   User, 
   Users, 
@@ -134,7 +134,7 @@ export default function Profiles() {
               topLevelAccounts.map((acc) => (
                 <Fragment key={acc.id}>
                   <tr 
-                    className={`row-primary ${expandedId === acc.id ? 'is-expanded' : ''}`}
+                    className={ow-primary }
                     onClick={() => toggleExpand(acc.id)}
                   >
                     <td>
