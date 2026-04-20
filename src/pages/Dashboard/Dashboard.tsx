@@ -51,59 +51,50 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Aggregated Stats Calculations
   const stats = useMemo(() => {
     const nodes = fleet?.nodes || [];
-    const onlineDevices = nodes.filter(n => n.status === "online").length;
-    const offlineDevices = nodes.length - onlineDevices;
-    const totalDetections = nodes.reduce((sum, n) => sum + n.total_events_today, 0);
+    const onlineDevicesCount = nodes.filter(n => n.status === "online").length;
+    const offlineDevicesCount = nodes.length - onlineDevicesCount;
+    const totalDetectionsCount = nodes.reduce((sum, n) => sum + n.total_events_today, 0);
     
-    // Filter out admins strictly
     const homeowners = accounts.filter(a => a.role && a.role !== "admin");
-    const totalHomeowners = homeowners.length;
+    const totalHomeownersCount = homeowners.length;
+    const totalFacesCount = homeowners.reduce((sum, acc) => sum + (acc.face_profile_count || 0), 0);
     
-    // Total faces: Sum face_profile_count from all homeowners
-    const totalFaces = homeowners.reduce((sum, acc) => sum + (acc.face_profile_count || 0), 0);
-    
-    // Online check: last_active within 30 minutes (lenient for testing)
     const now = new Date();
-    const isOnline = (lastActiveStr: string | null) => {
-        if (!lastActiveStr) return false;
-        const lastActiveDate = new Date(lastActiveStr);
-        const diffMinutes = (now.getTime() - lastActiveDate.getTime()) / (1000 * 60);
-        return diffMinutes < 30; // 30 minute window
-    };
-
-    const activeHomeowners = homeowners.filter(a => isOnline(a.last_active)).length;
+    const activeHomeownersCount = homeowners.filter(a => {
+        if (!a.last_active) return false;
+        const lastActiveDate = new Date(a.last_active);
+        return (now.getTime() - lastActiveDate.getTime()) < 30 * 60 * 1000;
+    }).length;
 
     return {
-        onlineDevices,
-        offlineDevices,
-        totalDetections,
-        totalFaces,
-        activeHomeowners,
-        totalHomeowners,
+        onlineDevices: onlineDevicesCount,
+        offlineDevices: offlineDevicesCount,
+        totalDetections: totalDetectionsCount,
+        totalFaces: totalFacesCount,
+        activeHomeowners: activeHomeownersCount,
+        totalHomeowners: totalHomeownersCount,
         backendStatus: error ? "Offline" : "Online"
     };
   }, [fleet, accounts, error]);
 
   return (
     <div className="dashboard-container">
-      {/* Cinematic Header */}
       <div className="dashboard-header">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 w-full">
           <div>
             <p className="accounts-eyebrow">Fleet Intelligence / Global Mesh</p>
             <h1 className="dashboard-title">Fleet Supervision</h1>
             <div className="dashboard-pulse">
-              <span className={pulse-dot }></span>
+              <span className={pulse-dot \}></span>
               <span>Backend Connectivity: <strong className={stats.backendStatus === "Online" ? "text-primary" : "text-error"}>{stats.backendStatus}</strong> • {stats.onlineDevices} Nodes Synchronized</span>
             </div>
           </div>
 
           <div className="flex gap-4">
             <button className="action-btn primary h-12 px-8 rounded-xl" onClick={() => void loadData()}>
-              <RefreshCw size={16} className={mr-3 } /> 
+              <RefreshCw size={16} className={mr-3 \} /> 
               {refreshing ? 'Syncing Mesh...' : 'Sync Registry'}
             </button>
           </div>
@@ -117,7 +108,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Main KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <div className="kpi-card border-l-2 border-primary">
           <div className="flex justify-between items-start">
@@ -160,7 +150,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Node Registry Section */}
       <div className="mb-16">
         <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
@@ -190,7 +179,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Aggregator Status Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="node-card-cinematic">
           <p className="text-[10px] uppercase text-primary mb-3 font-bold tracking-widest">Fleet Intelligence Report</p>
@@ -223,15 +211,15 @@ function NodeCinematicCard({ node, index }: { node: PiNodeStatus; index: number 
   const isOnline = node.status === "online";
 
   return (
-    <div className="node-card-cinematic animate-float" style={{ animationDelay: ${index * 0.05}s }}>
+    <div className="node-card-cinematic animate-float" style={{ animationDelay: \s }}>
       <header className="node-header">
         <div>
           <h4 className="node-name-huge">{node.device_name}</h4>
           <p className="node-id-mono">{node.device_id}</p>
         </div>
         <div className="node-status-badge">
-            <span className={w-1.5 h-1.5 rounded-full }></span>
-            <span className={	ext-[9px] font-extrabold uppercase tracking-widest }>
+            <span className={w-1.5 h-1.5 rounded-full \}></span>
+            <span className={	ext-[9px] font-extrabold uppercase tracking-widest \}>
                 {isOnline ? 'Active' : 'Offline'}
             </span>
         </div>
@@ -244,7 +232,7 @@ function NodeCinematicCard({ node, index }: { node: PiNodeStatus; index: number 
         </div>
         <div className="metric-item">
             <span className="metric-label">Thermal</span>
-            <span className="metric-value">{node.cpu_temp ? ${Math.round(node.cpu_temp)}°C : '--'}</span>
+            <span className="metric-value">{node.cpu_temp ? \°C : '--'}</span>
         </div>
       </div>
 
@@ -276,7 +264,7 @@ function FleetProgressUI({ label, value, color }: any) {
         <span className="text-xs font-serif text-white italic">{value}%</span>
       </div>
       <div className="w-full h-1 bg-black/60 rounded-full overflow-hidden border border-white/5">
-        <div className={${color} h-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.1)]} style={{ width: ${value}% }}></div>
+        <div className={\ h-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.1)]} style={{ width: \% }}></div>
       </div>
     </div>
   );
