@@ -55,9 +55,7 @@ export default function Login() {
     let hls: Hls | null = null;
 
     const attemptPlay = () => {
-      void video.play().catch(() => {
-        // Ignore autoplay rejections; the muted video remains ready for user interaction.
-      });
+      void video.play().catch(() => {});
     };
 
     const handleReady = () => {
@@ -77,16 +75,12 @@ export default function Login() {
     video.addEventListener("error", handleError);
 
     if (Hls.isSupported()) {
-      hls = new Hls({
-        enableWorker: true,
-      });
+      hls = new Hls({ enableWorker: true });
       hls.loadSource(LOGIN_VIDEO_SRC);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, handleReady);
       hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          handleError();
-        }
+        if (data.fatal) handleError();
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = LOGIN_VIDEO_SRC;
@@ -102,9 +96,7 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
-    if (!configuredBackendUrl) {
-      return;
-    }
+    if (!configuredBackendUrl) return;
 
     let cancelled = false;
 
@@ -125,10 +117,7 @@ export default function Login() {
     const track = marqueeTrackRef.current;
     if (!track) return;
 
-    const updateDistance = () => {
-      setMarqueeDistance(track.scrollWidth);
-    };
-
+    const updateDistance = () => setMarqueeDistance(track.scrollWidth);
     updateDistance();
 
     const observer = new ResizeObserver(updateDistance);
@@ -154,6 +143,7 @@ export default function Login() {
       : backendState === "offline" || backendState === "missing"
         ? "Offline"
         : "Linking";
+
   const marqueeStyle = useMemo(
     () =>
       ({
@@ -184,16 +174,6 @@ export default function Login() {
 
     setSubmitting(true);
     setError("");
-
-    if (backendState !== "online") {
-      const probe = await probeBackend(configuredBackendUrl);
-      setBackendState(probe.ok ? "online" : "offline");
-      if (!probe.ok) {
-        setSubmitting(false);
-        setError(probe.message);
-        return;
-      }
-    }
 
     const result = await login(username, password);
     setSubmitting(false);
@@ -289,7 +269,6 @@ export default function Login() {
               {submitting ? "Initializing..." : "Log In"}
             </button>
           </form>
-
         </section>
       </main>
 
@@ -309,7 +288,7 @@ export default function Login() {
                 </a>
               ) : (
                 <span
-                  key={`primary-${item.label}-${index}`}
+                  key={"primary-" + item.label + "-" + index}
                   className={item.tone === "strong" ? "login-marquee__item--strong" : "login-marquee__item--muted"}
                 >
                   {item.label}

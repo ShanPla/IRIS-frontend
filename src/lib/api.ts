@@ -8,6 +8,7 @@ export const DEFAULT_API_TIMEOUT_MS = 15000;
 export const AUTH_API_TIMEOUT_MS = 30000;
 
 const ENV_API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
+const NORMALIZED_ENV_API_URL = normalizeBackendUrl(ENV_API_URL);
 
 export function normalizeBackendUrl(raw: string): string {
   const trimmed = raw.trim();
@@ -23,9 +24,8 @@ export function normalizeBackendUrl(raw: string): string {
 }
 
 function resolveBackendUrl(): string | undefined {
-  const envUrl = normalizeBackendUrl(ENV_API_URL);
   const stored = normalizeBackendUrl(localStorage.getItem(BACKEND_URL_KEY) || "");
-  return envUrl || stored || undefined;
+  return NORMALIZED_ENV_API_URL || stored || undefined;
 }
 
 /**
@@ -64,6 +64,12 @@ export function getStoredBackendUrl(): string | null {
 }
 
 export function setStoredBackendUrl(url: string | null) {
+  if (NORMALIZED_ENV_API_URL) {
+    localStorage.removeItem(BACKEND_URL_KEY);
+    apiClient.defaults.baseURL = resolveBackendUrl();
+    return;
+  }
+
   const normalized = normalizeBackendUrl(url ?? "");
   if (normalized) {
     localStorage.setItem(BACKEND_URL_KEY, normalized);

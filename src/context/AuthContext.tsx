@@ -6,7 +6,6 @@ import {
   getApiErrorMessage, 
   getStoredToken,     
   logApiError,        
-  probeBackend,       
   setStoredBackendUrl,
   setStoredPiAddress,
   setStoredToken,
@@ -26,6 +25,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+const ADMIN_ONLY_ERROR = "This web console is limited to Render admin accounts.";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -50,6 +50,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setStoredToken(token);
         const user = await fetchCurrentUser();
+        if (user.role !== "admin") {
+          setStoredToken(null);
+          setSession(null);
+          setBootstrapping(false);
+          return;
+        }
         setSession({ user, token });
       } catch {
         setStoredToken(null);
@@ -73,12 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: "Backend API is not configured." };
     }
 
-    const probe = await probeBackend(backendUrl);
-    if (!probe.ok) {
-      return { success: false, error: probe.message };
-    }
-
-    setStoredBackendUrl(probe.normalizedUrl);
+    setStoredBackendUrl(backendUrl);
 
     const form = new URLSearchParams();
     form.append("username", normalizedUsername);
@@ -100,6 +101,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setStoredToken(token);
 
       const user = await fetchCurrentUser();
+      if (user.role !== "admin") {
+        setStoredToken(null);
+        setSession(null);
+        return {
+          success: false,
+          error: ADMIN_ONLY_ERROR,
+        };
+      }
+
       setSession({ user, token });
       return { success: true };
     } catch (error) {

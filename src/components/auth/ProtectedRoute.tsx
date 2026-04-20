@@ -17,5 +17,9 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
+  if (session.user.role !== "admin") {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
   return <>{children}</>;
 }
