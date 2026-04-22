@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { LayoutDashboard, HardDrive, ShieldCheck, LogOut, Users } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { TextScramble } from "../../ui/text-scramble";
 import "./Sidebar.css";
 
 interface SidebarProps {
@@ -51,7 +52,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
             }
           >
             <Icon size={18} className="sidebar-icon" />
-            <span className="sidebar-label">{label}</span>
+            <TextScramble text={label} className="sidebar-label" />
           </NavLink>
         ))}
       </nav>

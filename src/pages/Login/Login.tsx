@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  type CSSProperties,
+} from "react";
 import { useNavigate } from "react-router-dom";
-import Hls from "hls.js";
 import { Radio } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -9,8 +15,9 @@ import {
   probeBackend,
 } from "../../lib/api";
 import "./Login.css";
+import { Button } from "../../components/ui/neon-button";
+import earthLightReturnVideo from "../../assets/Earth_LightReturn - Trim.mp4";
 
-const LOGIN_VIDEO_SRC = "https://stream.mux.com/Aa02T7oM1wH5Mk5EEVDYhbZ1ChcdhRsS2m1NYyx4Ua1g.m3u8";
 const FOOTER_ITEMS = [
   { label: "Developed by SSR", tone: "strong" as const },
   {
@@ -25,91 +32,78 @@ const FOOTER_ITEMS = [
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const marqueeTrackRef = useRef<HTMLDivElement | null>(null);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const configuredBackendUrl = useMemo(
-    () => normalizeBackendUrl(getStoredBackendUrl() ?? ""),
-    []
-  );
-  const [backendState, setBackendState] = useState<"checking" | "online" | "offline" | "missing">(
-    configuredBackendUrl ? "checking" : "missing"
-  );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [marqueeDistance, setMarqueeDistance] = useState(0);
-  const marqueeItems = useMemo(() => [...FOOTER_ITEMS, ...FOOTER_ITEMS, ...FOOTER_ITEMS], []);
+
+  const configuredBackendUrl = useMemo(
+    () => normalizeBackendUrl(getStoredBackendUrl() ?? ""),
+    []
+  );
+
+  const [backendState, setBackendState] = useState<
+    "checking" | "online" | "offline" | "missing"
+  >(configuredBackendUrl ? "checking" : "missing");
+
+  const marqueeItems = useMemo(
+    () => [...FOOTER_ITEMS, ...FOOTER_ITEMS, ...FOOTER_ITEMS],
+    []
+  );
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    let hls: Hls | null = null;
-
-    const attemptPlay = () => {
-      void video.play().catch(() => {});
-    };
-
-    const handleReady = () => {
-      setVideoReady(true);
-      attemptPlay();
-    };
-
-    const handleError = () => {
-      setVideoReady(false);
-    };
+    const handleReady = () => setVideoReady(true);
+    const handleError = () => setVideoReady(false);
 
     video.muted = true;
     video.playsInline = true;
-    video.defaultMuted = true;
+    video.preload = "auto";
+    video.loop = true;
+    video.src = earthLightReturnVideo;
 
     video.addEventListener("canplay", handleReady);
     video.addEventListener("error", handleError);
 
-    if (Hls.isSupported()) {
-      hls = new Hls({ enableWorker: true });
-      hls.loadSource(LOGIN_VIDEO_SRC);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, handleReady);
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) handleError();
-      });
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = LOGIN_VIDEO_SRC;
-      video.addEventListener("loadedmetadata", handleReady);
-    }
+    void video.play().catch(() => undefined);
 
     return () => {
       video.removeEventListener("canplay", handleReady);
       video.removeEventListener("error", handleError);
-      video.removeEventListener("loadedmetadata", handleReady);
-      hls?.destroy();
     };
   }, []);
 
   useEffect(() => {
     if (!configuredBackendUrl) return;
 
-    let cancelled = false;
+    let isMounted = true;
 
     const checkBackend = async () => {
       const result = await probeBackend(configuredBackendUrl);
-      if (cancelled) return;
-      setBackendState(result.ok ? "online" : "offline");
+
+      if (isMounted) {
+        setBackendState(result.ok ? "online" : "offline");
+      }
     };
 
-    void checkBackend();
+    checkBackend();
 
     return () => {
-      cancelled = true;
+      isMounted = false;
     };
   }, [configuredBackendUrl]);
 
@@ -122,27 +116,24 @@ export default function Login() {
 
     const observer = new ResizeObserver(updateDistance);
     observer.observe(track);
-    window.addEventListener("resize", updateDistance);
 
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updateDistance);
-    };
+    return () => observer.disconnect();
   }, [marqueeItems]);
 
-  const clock = useMemo(() => {
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    const seconds = String(now.getSeconds()).padStart(2, "0");
-    return { hours, minutes, seconds };
-  }, [now]);
+  const clock = useMemo(
+    () => ({
+      hours: String(now.getHours()).padStart(2, "0"),
+      minutes: String(now.getMinutes()).padStart(2, "0"),
+      seconds: String(now.getSeconds()).padStart(2, "0"),
+    }),
+    [now]
+  );
 
-  const statusLabel =
-    backendState === "online"
-      ? "Online"
-      : backendState === "offline" || backendState === "missing"
-        ? "Offline"
-        : "Linking";
+  const statusLabel = useMemo(() => {
+    if (backendState === "online") return "Online";
+    if (backendState === "offline" || backendState === "missing") return "Offline";
+    return "Linking";
+  }, [backendState]);
 
   const marqueeStyle = useMemo(
     () =>
@@ -150,58 +141,65 @@ export default function Login() {
         "--login-marquee-distance": `${marqueeDistance}px`,
         "--login-marquee-distance-negative": `-${marqueeDistance}px`,
         "--login-marquee-duration": `${Math.max(marqueeDistance / 80, 18)}s`,
-      }) as CSSProperties,
+      } as CSSProperties),
     [marqueeDistance]
   );
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
 
-    if (!configuredBackendUrl) {
-      setError("Backend API is not configured for this deployment.");
-      return;
-    }
+      if (!configuredBackendUrl) {
+        setError("Backend API is not configured.");
+        return;
+      }
 
-    if (!username.trim()) {
-      setError("Enter your username first.");
-      return;
-    }
+      if (!username.trim() || !password) {
+        setError("Please provide both credentials.");
+        return;
+      }
 
-    if (!password) {
-      setError("Enter your password first.");
-      return;
-    }
+      setSubmitting(true);
+      setError("");
 
-    setSubmitting(true);
-    setError("");
+      const result = await login(username, password);
 
-    const result = await login(username, password);
-    setSubmitting(false);
+      setSubmitting(false);
 
-    if (result.success) {
-      navigate("/dashboard", { replace: true });
-      return;
-    }
-
-    setError(result.error ?? "Login failed. Check your username, password, and backend API.");
-  };
+      if (result.success) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        setError(result.error ?? "Login failed. Please verify credentials.");
+      }
+    },
+    [configuredBackendUrl, username, password, login, navigate]
+  );
 
   return (
     <div className="login-page">
       <div className="login-page__mesh" aria-hidden="true">
         <video
           ref={videoRef}
-          className={`login-page__video ${videoReady ? "login-page__video--ready" : ""}`}
+          className={`login-page__video ${
+            videoReady ? "login-page__video--ready" : ""
+          }`}
           autoPlay
           muted
           loop
           playsInline
         />
+
+        <div className="login-page__blue-aura" />
+        <div className="login-page__starfield" />
+
+        <div className="login-page__shooting-stars">
+          <span className="login-page__shooting-star login-page__shooting-star--three" />
+          <span className="login-page__shooting-star login-page__shooting-star--four" />
+        </div>
+
         <div className="login-page__video-overlay" />
         <div className="login-page__noise" />
         <div className="login-page__grid" />
-        <div className="login-page__glow login-page__glow--one" />
-        <div className="login-page__glow login-page__glow--two" />
       </div>
 
       <header className="login-topbar">
@@ -212,21 +210,28 @@ export default function Login() {
             <span>System Status: {statusLabel}</span>
           </div>
         </div>
-        <div className="login-topbar__clock" aria-label="Current time">
-          <span className="login-topbar__digit login-topbar__digit--one">{clock.hours}</span>
+
+        <div className="login-topbar__clock">
+          <span className="login-topbar__digit login-topbar__digit--one">
+            {clock.hours}
+          </span>
           <span className="login-topbar__sep">:</span>
-          <span className="login-topbar__digit login-topbar__digit--two">{clock.minutes}</span>
+          <span className="login-topbar__digit login-topbar__digit--two">
+            {clock.minutes}
+          </span>
           <span className="login-topbar__sep">:</span>
-          <span className="login-topbar__digit login-topbar__digit--three">{clock.seconds}</span>
+          <span className="login-topbar__digit login-topbar__digit--three">
+            {clock.seconds}
+          </span>
         </div>
       </header>
 
       <main className="login-terminal">
-        <section className="login-terminal__panel">
+        <section className="login-terminal__panel glass-monolith">
           <div className="login-terminal__header">
             <h2>Admin Access</h2>
             <p>
-              Encrypted terminal access for <span>IRIS Core</span>. Please provide credentials.
+              Encrypted terminal access for <span>IRIS Core</span>.
             </p>
           </div>
 
@@ -240,11 +245,8 @@ export default function Login() {
                 <input
                   type="text"
                   value={username}
-                  onChange={(event) => setUsername(event.target.value)}
+                  onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter Username"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
                   className="login-input__field"
                 />
               </div>
@@ -257,29 +259,37 @@ export default function Login() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter Password"
-                  autoComplete="current-password"
                   className="login-input__field"
                 />
               </div>
             </div>
 
-            <button type="submit" className="login-submit" disabled={submitting}>
+            <Button
+              type="submit"
+              className="login-submit"
+              disabled={submitting}
+              variant="solid"
+            >
               {submitting ? "Initializing..." : "Log In"}
-            </button>
+            </Button>
           </form>
         </section>
       </main>
 
-      <footer className="login-marquee" aria-label="System ticker">
+      <footer className="login-marquee">
         <div className="login-marquee__rail" style={marqueeStyle}>
           <div className="login-marquee__track" ref={marqueeTrackRef}>
-            {marqueeItems.map((item, index) => (
+            {marqueeItems.map((item, index) =>
               item.href ? (
                 <a
-                  key={`primary-${item.label}-${index}`}
-                  className={`login-marquee__link ${item.tone === "strong" ? "login-marquee__item--strong" : "login-marquee__item--muted"}`}
+                  key={index}
+                  className={`login-marquee__link ${
+                    item.tone === "strong"
+                      ? "login-marquee__item--strong"
+                      : "login-marquee__item--muted"
+                  }`}
                   href={item.href}
                   target="_blank"
                   rel="noreferrer"
@@ -288,35 +298,31 @@ export default function Login() {
                 </a>
               ) : (
                 <span
-                  key={"primary-" + item.label + "-" + index}
-                  className={item.tone === "strong" ? "login-marquee__item--strong" : "login-marquee__item--muted"}
+                  key={index}
+                  className={
+                    item.tone === "strong"
+                      ? "login-marquee__item--strong"
+                      : "login-marquee__item--muted"
+                  }
                 >
                   {item.label}
                 </span>
               )
-            ))}
+            )}
           </div>
+
           <div className="login-marquee__track" aria-hidden="true">
             {marqueeItems.map((item, index) => (
-              item.href ? (
-                <a
-                  key={`clone-${item.label}-${index}`}
-                  className={`login-marquee__link ${item.tone === "strong" ? "login-marquee__item--strong" : "login-marquee__item--muted"}`}
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  tabIndex={-1}
-                >
-                  {item.label}
-                </a>
-              ) : (
-                <span
-                  key={`clone-${item.label}-${index}`}
-                  className={item.tone === "strong" ? "login-marquee__item--strong" : "login-marquee__item--muted"}
-                >
-                  {item.label}
-                </span>
-              )
+              <span
+                key={index}
+                className={
+                  item.tone === "strong"
+                    ? "login-marquee__item--strong"
+                    : "login-marquee__item--muted"
+                }
+              >
+                {item.label}
+              </span>
             ))}
           </div>
         </div>
