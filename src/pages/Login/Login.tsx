@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   useCallback,
+  useId,
   type CSSProperties,
 } from "react";
 import { useNavigate } from "react-router-dom";
@@ -35,6 +36,9 @@ export default function Login() {
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const marqueeTrackRef = useRef<HTMLDivElement | null>(null);
+  const usernameInputId = useId();
+  const passwordInputId = useId();
+  const loginErrorId = useId();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -235,33 +239,58 @@ export default function Login() {
             </p>
           </div>
 
-          {error && <p className="login-alert login-alert--danger">{error}</p>}
+          {error && (
+            <p
+              id={loginErrorId}
+              className="login-alert login-alert--danger"
+              role="alert"
+              aria-live="assertive"
+            >
+              {error}
+            </p>
+          )}
 
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="login-form__field">
-              <label className="login-form__label">Terminal Identity</label>
+              <label className="login-form__label" htmlFor={usernameInputId}>
+                Terminal Identity
+              </label>
               <div className="login-input">
                 <span className="login-input__icon">@</span>
                 <input
+                  id={usernameInputId}
+                  name="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter Username"
                   className="login-input__field"
+                  autoComplete="username"
+                  aria-describedby={error ? loginErrorId : undefined}
+                  aria-invalid={Boolean(error)}
+                  required
                 />
               </div>
             </div>
 
             <div className="login-form__field">
-              <label className="login-form__label">Encryption Key</label>
+              <label className="login-form__label" htmlFor={passwordInputId}>
+                Encryption Key
+              </label>
               <div className="login-input">
                 <span className="login-input__icon">#</span>
                 <input
+                  id={passwordInputId}
+                  name="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter Password"
                   className="login-input__field"
+                  autoComplete="current-password"
+                  aria-describedby={error ? loginErrorId : undefined}
+                  aria-invalid={Boolean(error)}
+                  required
                 />
               </div>
             </div>
@@ -271,6 +300,7 @@ export default function Login() {
               className="login-submit"
               disabled={submitting}
               variant="solid"
+              aria-busy={submitting}
             >
               {submitting ? "Initializing..." : "Log In"}
             </Button>

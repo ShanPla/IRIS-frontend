@@ -218,18 +218,28 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 100%;
   min-height: 400px;
   background: rgba(158, 202, 255, 0.01);
   border: 2px dashed rgba(158, 202, 255, 0.1);
   border-radius: 32px;
+  color: inherit;
   cursor: pointer;
+  font: inherit;
+  text-align: center;
   transition: all 0.4s ease;
 }
 
-.add-identity-block:hover {
+.add-identity-block:hover,
+.add-identity-block:focus-visible {
   background: rgba(158, 202, 255, 0.03);
   border-color: rgba(158, 202, 255, 0.3);
   transform: scale(0.99);
+}
+
+.add-identity-block:focus-visible {
+  outline: 2px solid rgba(158, 202, 255, 0.7);
+  outline-offset: 4px;
 }
 
 .add-icon-circle {
@@ -323,6 +333,16 @@
   color: #94a3b8;
   margin-bottom: 10px;
   font-weight: 700;
+}
+
+.cyber-label {
+  display: block;
+  margin-bottom: 10px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .cyber-field {

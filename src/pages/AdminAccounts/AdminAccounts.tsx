@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { 
   Shield, 
   Trash2, 
@@ -28,6 +28,8 @@ interface BackendAdminAccount {
 }
 
 export default function AdminAccounts() {
+  const usernameInputId = useId();
+  const passwordInputId = useId();
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAdmin, setNewAdmin] = useState({ username: "", password: "" });
@@ -165,16 +167,16 @@ export default function AdminAccounts() {
                 </div>
 
                 <div className="block-actions">
-                  <button className="block-btn">
+                  <button type="button" className="block-btn">
                     <Activity size={14} className="mr-2" /> Audit
                   </button>
                   {deleteConfirm === account.id ? (
                     <div className="flex-1 flex gap-2">
-                         <button className="block-btn danger flex-1" onClick={() => void handleDelete(account.id)}>Confirm</button>
-                         <button className="block-btn w-12" onClick={() => setDeleteConfirm(null)}><X size={14} /></button>
+                         <button type="button" className="block-btn danger flex-1" onClick={() => void handleDelete(account.id)}>Confirm</button>
+                         <button type="button" className="block-btn w-12" onClick={() => setDeleteConfirm(null)} aria-label="Cancel revoke"><X size={14} /></button>
                     </div>
                   ) : (
-                    <button className="block-btn danger" onClick={() => setDeleteConfirm(account.id)}>
+                    <button type="button" className="block-btn danger" onClick={() => setDeleteConfirm(account.id)}>
                       <Trash2 size={14} className="mr-2" /> Revoke
                     </button>
                   )}
@@ -183,13 +185,13 @@ export default function AdminAccounts() {
             ))}
 
             {accounts.length < 3 && (
-              <div className="add-identity-block" onClick={() => setShowAddModal(true)}>
+              <button type="button" className="add-identity-block" onClick={() => setShowAddModal(true)}>
                 <div className="add-icon-circle">
                   <UserPlus size={32} />
                 </div>
                 <h4 className="add-title">Authorize New Node</h4>
                 <p className="add-subtitle">{3 - accounts.length} slots remaining in core</p>
-              </div>
+              </button>
             )}
           </>
         )}
@@ -204,34 +206,42 @@ export default function AdminAccounts() {
                 <h2 className="modal-main-title">New Commission</h2>
                 <p className="modal-desc">Authorize a new administrative node.</p>
               </div>
-              <button className="icon-btn" onClick={() => setShowAddModal(false)}>
+              <button type="button" className="icon-btn" onClick={() => setShowAddModal(false)} aria-label="Close new admin dialog">
                 <X size={20} />
               </button>
             </header>
 
             <form onSubmit={handleAddAdmin} className="form-stack">
               <div>
-                <label className="cyber-label">Terminal Identity</label>
+                <label className="cyber-label" htmlFor={usernameInputId}>Terminal Identity</label>
                 <div className="cyber-field">
                   <User size={18} className="cyber-field-icon" />
                   <input 
+                    id={usernameInputId}
+                    name="new-admin-username"
                     placeholder="Enter unique username"
                     value={newAdmin.username}
                     onChange={e => setNewAdmin({...newAdmin, username: e.target.value})}
+                    autoComplete="username"
                     autoFocus
+                    required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="cyber-label">Encryption Cipher</label>
+                <label className="cyber-label" htmlFor={passwordInputId}>Encryption Cipher</label>
                 <div className="cyber-field">
                   <Lock size={18} className="cyber-field-icon" />
                   <input 
+                    id={passwordInputId}
+                    name="new-admin-password"
                     type="password"
                     placeholder="Set secure access key"
                     value={newAdmin.password}
                     onChange={e => setNewAdmin({...newAdmin, password: e.target.value})}
+                    autoComplete="new-password"
+                    required
                   />
                 </div>
               </div>

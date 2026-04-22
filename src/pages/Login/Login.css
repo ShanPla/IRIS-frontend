@@ -1,6 +1,7 @@
 .login-page {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   background:
     radial-gradient(circle at 18% 34%, rgba(18, 46, 86, 0.13), transparent 28%),
@@ -370,6 +371,7 @@
   position: relative;
   z-index: 8;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -531,7 +533,7 @@
 .login-alert--danger {
   background: rgba(255, 180, 171, 0.1);
   border: 1px solid rgba(255, 180, 171, 0.18);
-  color: var(--app-danger);
+  color: var(--app-error);
 }
 
 .login-marquee {
@@ -702,5 +704,27 @@
     --star-width: 100px;
     --star-x: -720px;
     --star-y: 65px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page__video {
+    transition: none;
+  }
+
+  .login-page__shooting-star,
+  .login-page__shooting-stars::before,
+  .login-page__shooting-stars::after,
+  .login-topbar__digit--one,
+  .login-topbar__digit--two,
+  .login-topbar__digit--three,
+  .login-marquee__rail {
+    animation: none;
+  }
+
+  .login-page__shooting-star,
+  .login-page__shooting-stars::before,
+  .login-page__shooting-stars::after {
+    opacity: 0;
   }
 }

@@ -91,6 +91,7 @@ export default function Devices() {
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
           <input
+            aria-label="Search devices"
             className="w-full bg-black/40 border border-white/5 py-3 pl-12 pr-4 rounded-xl text-white outline-none focus:border-primary/50 transition-all"
             placeholder="Search by Node ID or Name..."
             value={search}

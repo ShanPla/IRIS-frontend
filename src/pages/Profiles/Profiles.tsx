@@ -87,6 +87,7 @@ export default function Profiles() {
         <div className="search-input-wrapper">
           <Search className="search-input-icon" size={18} />
           <input
+            aria-label="Search account hierarchy"
             placeholder="Search by username or device identifier (e.g. B2D4)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}

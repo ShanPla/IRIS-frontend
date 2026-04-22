@@ -65,6 +65,7 @@ a {
 .admin-shell {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .admin-shell__scene {
@@ -177,6 +178,7 @@ a {
   z-index: 1;
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .admin-shell__overlay {
@@ -244,6 +246,20 @@ a {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell__wires path,
+  .admin-shell__shard,
+  .admin-shell__node,
+  .animate-float {
+    animation: none !important;
+  }
+
+  .action-btn,
+  .admin-shell__overlay {
+    transition-duration: 0.01ms;
+  }
+}
+
 /* Global Action Buttons */
 .action-btn {
   display: inline-flex;
@@ -293,6 +309,45 @@ a {
 .action-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.action-btn-ghost,
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--app-text-muted);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.action-btn-ghost {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.action-btn-ghost:hover,
+.icon-btn:hover {
+  background: rgba(158, 202, 255, 0.08);
+  border-color: rgba(158, 202, 255, 0.24);
+  color: var(--app-primary);
+  transform: translateY(-1px);
+}
+
+.action-btn-ghost:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2px solid rgba(158, 202, 255, 0.7);
+  outline-offset: 3px;
 }
 
 .glass-monolith {
