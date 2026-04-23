@@ -22,25 +22,43 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [statsWarning, setStatsWarning] = useState("");
 
   const loadData = async (options?: { silent?: boolean }) => {
     if (options?.silent) setRefreshing(true);
     else setLoading(true);
     setError("");
+    setStatsWarning("");
 
     try {
-      const [fleetRes, accountsRes, statsRes] = await Promise.all([
+      const [fleetResult, accountsResult, statsResult] = await Promise.allSettled([
         apiClient.get<FleetStatus>("/api/fleet/status"),
         apiClient.get<AppUserAccount[]>("/api/auth/admin/app-users"),
         apiClient.get<AdminSystemStats>("/api/admin/stats"),
       ]);
-      
-      const fleetData = fleetRes.data;
-      const accountsData = Array.isArray(accountsRes.data) ? accountsRes.data : [];
-      
-      setFleet(fleetData);
-      setAccounts(accountsData);
-      setSystemStats(statsRes.data);
+
+      const fleetLoaded = fleetResult.status === "fulfilled";
+      const accountsLoaded = accountsResult.status === "fulfilled";
+      const statsLoaded = statsResult.status === "fulfilled";
+
+      if (fleetLoaded) {
+        setFleet(fleetResult.value.data);
+      }
+
+      if (accountsLoaded) {
+        const accountsData = Array.isArray(accountsResult.value.data) ? accountsResult.value.data : [];
+        setAccounts(accountsData);
+      }
+
+      if (statsLoaded) {
+        setSystemStats(statsResult.value.data);
+      } else {
+        setStatsWarning("Overview totals are using fallback values because admin stats could not be loaded.");
+      }
+
+      if (!fleetLoaded && !accountsLoaded) {
+        setError("Failed to synchronize with central cloud registry.");
+      }
     } catch {
       setError("Failed to synchronize with central cloud registry.");
     } finally {
@@ -69,9 +87,9 @@ export default function Dashboard() {
         totalFaces: systemStats?.total_faces ?? registrySummary.totalFaces,
         activeHomeowners: registrySummary.activeHomeowners,
         totalHomeowners: registrySummary.totalHomeowners,
-        backendStatus: error ? "Offline" : "Online"
+        backendStatus: fleet || accounts.length > 0 ? "Online" : "Offline"
     };
-  }, [fleet, registrySummary, systemStats, error]);
+  }, [fleet, accounts.length, registrySummary, systemStats]);
 
   return (
     <div className="dashboard-container">
@@ -106,6 +124,13 @@ export default function Dashboard() {
         <div className="bg-error/10 border border-error/20 text-error p-5 rounded-2xl mb-10 flex items-center gap-4 animate-float">
           <ShieldAlert size={20} />
           <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
+
+      {!error && statsWarning && (
+        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 p-5 rounded-2xl mb-10 flex items-center gap-4 animate-float">
+          <ShieldAlert size={20} />
+          <span className="text-sm font-medium">{statsWarning}</span>
         </div>
       )}
 
