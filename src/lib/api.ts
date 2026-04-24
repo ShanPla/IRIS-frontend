@@ -91,9 +91,20 @@ export function setStoredPiAddress(address: string | null) {
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
-    const detail = error.response?.data;
-    if (typeof detail === "string" && detail.trim()) return detail;
-    if (detail?.detail && typeof detail.detail === "string") return detail.detail;
+    const data = error.response?.data;
+    
+    // Handle 422 Validation Errors from FastAPI/Pydantic
+    if (error.response?.status === 422 && Array.isArray(data?.detail)) {
+      const messages = data.detail.map((err: { msg: string; loc: (string | number)[] }) => {
+        const field = err.loc && err.loc.length > 1 ? String(err.loc[1]) : "";
+        return field ? `${field}: ${err.msg}` : err.msg;
+      });
+      return messages.join(". ");
+    }
+
+    if (typeof data === "string" && data.trim()) return data;
+    if (data?.detail && typeof data.detail === "string") return data.detail;
+    
     if (error.code === "ECONNABORTED") return "Request timed out.";
     if (error.code === "ERR_NETWORK") return "Network error. Check backend or tunnel status.";
   }

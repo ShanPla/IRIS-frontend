@@ -209,6 +209,12 @@ export default function AdminAccounts() {
             </header>
 
             <form onSubmit={handleAddAdmin} className="form-stack">
+              {formError && (
+                <div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl mb-4 text-xs font-medium flex items-center gap-2">
+                  <ShieldCheck size={14} />
+                  {formError}
+                </div>
+              )}
               <div>
                 <label className="cyber-label" htmlFor={usernameInputId}>Terminal Identity</label>
                 <div className="cyber-field">
