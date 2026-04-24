@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { 
   Shield, 
   Trash2, 
@@ -8,7 +9,6 @@ import {
   User, 
   Fingerprint, 
   ShieldCheck, 
-  Activity
 } from "lucide-react";
 import { apiClient, getApiErrorMessage } from "../../lib/api";
 import "./AdminAccounts.css";
@@ -195,7 +195,7 @@ export default function AdminAccounts() {
       </div>
 
       {/* Modern Commission Modal */}
-      {showAddModal && (
+      {showAddModal && createPortal(
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowAddModal(false)}>
           <div className="modal-surface">
             <header className="modal-header-top">
@@ -261,7 +261,8 @@ export default function AdminAccounts() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
