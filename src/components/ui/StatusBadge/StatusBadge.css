@@ -28,3 +28,8 @@
   color: #fbbf24;
 }
 
+.status-badge--uncertain-presence {
+  background-color: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+

@@ -1,7 +1,7 @@
 import { ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
 import "./StatusBadge.css";
 
-export type BadgeStatus = "authorized" | "unknown" | "unverifiable" | "possible_threat";
+export type BadgeStatus = "authorized" | "unknown" | "unverifiable" | "possible_threat" | "uncertain_presence";
 
 const config: Record<BadgeStatus, { label: string; icon: React.ReactNode; className: string }> = {
   authorized: {
@@ -23,6 +23,11 @@ const config: Record<BadgeStatus, { label: string; icon: React.ReactNode; classN
     label: "Unverifiable",
     icon: <ShieldQuestion size={13} />,
     className: "status-badge status-badge--unverifiable",
+  },
+  uncertain_presence: {
+    label: "Uncertain Presence",
+    icon: <ShieldQuestion size={13} />,
+    className: "status-badge status-badge--uncertain-presence",
   },
 };
 
